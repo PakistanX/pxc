@@ -46,6 +46,7 @@ export function setup(activity) {
       .fb-panel ol { margin: 0; padding-left: 22px; }
       .fb-panel li { margin: 2px 0; }
       .fb-panel .best { font-size: 24px; font-weight: bold; color: #2a6; }
+      .fb-panel .fb-del { background: none; border: none; color: #c33; cursor: pointer; font-size: 14px; padding: 0 4px; }
     </style>
     <div class="fb-wrap">
       <div class="fb-stage">
@@ -272,8 +273,18 @@ export function setup(activity) {
     bestEl.textContent = String(best);
     const scores = activity.state.top_scores || [];
     topEl.innerHTML = scores
-      .map((s) => `<li>${escapeHtml(s.user)} — <strong>${s.score | 0}</strong></li>`)
+      .map((s, i) => {
+        const del = permission === "edit" ? ` <button class="fb-del" data-del="${i}">\u00d7</button>` : "";
+        return `<li>${escapeHtml(s.user)} — <strong>${s.score | 0}</strong>${del}</li>`;
+      })
       .join("");
+    if (permission === "edit") {
+      for (const btn of topEl.querySelectorAll("[data-del]")) {
+        btn.addEventListener("click", () => {
+          activity.sendAction("scores.delete", parseInt(btn.dataset.del, 10));
+        });
+      }
+    }
   }
 
   activity.onEvent = (name, value) => {

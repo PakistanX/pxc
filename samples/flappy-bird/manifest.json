@@ -35,7 +35,8 @@
       "properties": {
         "score": { "type": "integer" }
       }
-    }
+    },
+    "scores.delete": { "type": "integer" }
   },
   "events": {
     "player.position": {

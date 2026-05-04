@@ -21,6 +21,18 @@ export function onAction(name, data, context, permission) {
     return "";
   }
 
+  if (name === "scores.delete") {
+    if (permission !== "edit") return "";
+    const index = value;
+    const top = JSON.parse(getField("top_scores"));
+    if (index >= 0 && index < top.length) {
+      top.splice(index, 1);
+      setField("top_scores", JSON.stringify(top));
+      sendEvent("fields.change.top_scores", JSON.stringify(top), null, "play");
+    }
+    return "";
+  }
+
   if (name === "game.over") {
     const score = Math.max(0, Math.floor(Number(value.score) || 0));
 
