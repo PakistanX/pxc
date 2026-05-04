@@ -111,6 +111,12 @@ export function setup(activity) {
       }
       .math-feedback.correct   { background: #d1fae5; color: #065f46; }
       .math-feedback.incorrect { background: #fee2e2; color: #991b1b; }
+      @keyframes badge-pop {
+        0%   { transform: scale(1); }
+        50%  { transform: scale(1.25); }
+        100% { transform: scale(1); }
+      }
+      .badge-pop { animation: badge-pop 0.3s ease; }
     </style>
 
     <div class="math-card">
@@ -145,12 +151,20 @@ export function setup(activity) {
   correctCountEl.textContent = activity.state.correct_answers || 0;
   wrongCountEl.textContent = activity.state.wrong_answers || 0;
 
+  function popBadge(el) {
+    el.classList.remove("badge-pop");
+    void el.offsetWidth;
+    el.classList.add("badge-pop");
+  }
+
   // Handle events from backend
   activity.onEvent = (name, value) => {
     if (name === "fields.change.correct_answers") {
       correctCountEl.textContent = value;
+      popBadge(correctCountEl.parentElement);
     } else if (name === "fields.change.wrong_answers") {
       wrongCountEl.textContent = value;
+      popBadge(wrongCountEl.parentElement);
     } else if (name === "answer.result") {
       feedbackEl.style.display = "block";
       feedbackEl.textContent = value.feedback;
