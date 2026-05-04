@@ -5,7 +5,8 @@ SANDBOX_LIB := $(wildcard $(REPO_ROOT)/src/pxc/lib/sandbox/*.js)
 build: sandbox.wasm
 
 node_modules: package.json
-	npm install
+	rm -rf node_modules
+	npm clean-install
 
 sandbox.bundle.js: sandbox.js node_modules
 	npx esbuild sandbox.js --bundle --format=esm --platform=neutral '--external:pxc:sandbox/*' --outfile=sandbox.bundle.js
