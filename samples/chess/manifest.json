@@ -1,0 +1,96 @@
+{
+  "name": "chess",
+  "ui": "ui.bundle.js",
+  "sandbox": "sandbox.wasm",
+  "fields": {
+    "fen": {
+      "type": "string",
+      "scope": "activity",
+      "default": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    },
+    "white": {
+      "type": "string",
+      "scope": "activity",
+      "default": ""
+    },
+    "black": {
+      "type": "string",
+      "scope": "activity",
+      "default": ""
+    },
+    "status": {
+      "type": "string",
+      "scope": "activity",
+      "default": "waiting"
+    },
+    "result": {
+      "type": "string",
+      "scope": "activity",
+      "default": ""
+    },
+    "records": {
+      "type": "log",
+      "items": {
+        "type": "object",
+        "properties": {
+          "white": { "type": "string" },
+          "black": { "type": "string" },
+          "result": { "type": "string" },
+          "winner": { "type": "string" }
+        }
+      },
+      "scope": "activity"
+    }
+  },
+  "actions": {
+    "game.join": {
+      "type": "object",
+      "properties": {}
+    },
+    "game.move": {
+      "type": "object",
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "promotion": { "type": "string" }
+      }
+    },
+    "game.reset": {
+      "type": "object",
+      "properties": {}
+    },
+    "records.delete": {
+      "type": "integer"
+    }
+  },
+  "events": {
+    "game.updated": {
+      "type": "object",
+      "properties": {
+        "fen": { "type": "string" },
+        "white": { "type": "string" },
+        "black": { "type": "string" },
+        "status": { "type": "string" },
+        "result": { "type": "string" }
+      }
+    },
+    "records.changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "value": {
+            "type": "object",
+            "properties": {
+              "white": { "type": "string" },
+              "black": { "type": "string" },
+              "result": { "type": "string" },
+              "winner": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

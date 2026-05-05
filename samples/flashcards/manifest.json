@@ -1,0 +1,93 @@
+{
+  "name": "flashcards",
+  "fields": {
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "front": { "type": "string" },
+          "back": { "type": "string" }
+        }
+      },
+      "scope": "activity",
+      "default": []
+    },
+    "rating_mode": {
+      "type": "string",
+      "scope": "activity",
+      "default": "sm2"
+    },
+    "schedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "card_id": { "type": "string" },
+          "due_at": { "type": "number" },
+          "ease": { "type": "number" },
+          "interval": { "type": "integer" },
+          "repetitions": { "type": "integer" }
+        }
+      },
+      "scope": "user,activity",
+      "default": []
+    }
+  },
+  "actions": {
+    "config.save": {
+      "type": "object",
+      "properties": {
+        "cards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "front": { "type": "string" },
+              "back": { "type": "string" }
+            }
+          }
+        },
+        "rating_mode": { "type": "string" }
+      }
+    },
+    "card.review": {
+      "type": "object",
+      "properties": {
+        "card_id": { "type": "string" },
+        "rating": { "type": "string" }
+      }
+    }
+  },
+  "events": {
+    "fields.change.cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "front": { "type": "string" },
+          "back": { "type": "string" }
+        }
+      }
+    },
+    "fields.change.rating_mode": { "type": "string" },
+    "fields.change.schedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "card_id": { "type": "string" },
+          "due_at": { "type": "number" },
+          "ease": { "type": "number" },
+          "interval": { "type": "integer" },
+          "repetitions": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "ui": "ui.js",
+  "sandbox": "sandbox.wasm"
+}
