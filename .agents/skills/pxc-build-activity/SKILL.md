@@ -146,6 +146,8 @@ export function onAction(name, data, context, permission) {
 
 Each capability declared in `manifest.json` unlocks a matching WIT interface under `pxc:sandbox/`. Import from the interface module matching the function's group. A sandbox that imports an interface without the corresponding capability fails to instantiate.
 
+**Context records use camelCase in JS.** The WIT `record context { activity-id, course-id, user-id }` is exposed to JS as `{ activityId, courseId, userId }`. Passing kebab-case keys like `{ "user-id": "alice" }` is silently ignored — the host receives every field as `None` and the override is lost without any error. Always use camelCase: `{ userId: "alice" }`. The same rule applies to the `context` argument that JS receives in `getState`/`onAction` — read `context.userId`, not `context["user-id"]`.
+
 ## `pxc:sandbox/state` (always available)
 
 - `getField(name, context)` → JSON string of field value. `context` is optional (pass `null` or omit for the current context).

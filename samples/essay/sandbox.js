@@ -56,7 +56,7 @@ export function onAction(name, data, context, permission) {
     if (permission !== "play") return "";
     if (JSON.parse(getField("submission_id", null)) >= 0) return "";
     setField("draft", JSON.stringify(value), null);
-    sendEvent("essay.saved", JSON.stringify(true), { "user-id": userId }, "play");
+    sendEvent("essay.saved", JSON.stringify(true), { userId: userId }, "play");
     return "";
   }
 
@@ -73,7 +73,7 @@ export function onAction(name, data, context, permission) {
     const newId = logAppend("submissions", JSON.stringify(entry), null);
     setField("submission_id", JSON.stringify(newId), null);
     setField("draft", JSON.stringify(value), null);
-    sendEvent("essay.submitted", JSON.stringify(true), { "user-id": userId }, "play");
+    sendEvent("essay.submitted", JSON.stringify(true), { userId: userId }, "play");
     sendEvent("submissions.changed", JSON.stringify(getSubmissions()), null, "edit");
     return "";
   }
@@ -84,7 +84,7 @@ export function onAction(name, data, context, permission) {
     const grade = value.grade;
     const gradeComment = value.grade_comment;
 
-    const submissionId = JSON.parse(getField("submission_id", { "user-id": targetUserId }));
+    const submissionId = JSON.parse(getField("submission_id", { userId: targetUserId }));
     if (submissionId < 0) return "";
     const existing = JSON.parse(logGet("submissions", submissionId, null));
     if (existing === null) return "";
@@ -98,12 +98,12 @@ export function onAction(name, data, context, permission) {
       grade_comment: gradeComment,
     };
     const newId = logAppend("submissions", JSON.stringify(updated), null);
-    setField("submission_id", JSON.stringify(newId), { "user-id": targetUserId });
+    setField("submission_id", JSON.stringify(newId), { userId: targetUserId });
 
     sendEvent(
       "essay.graded",
       JSON.stringify({ grade, grade_comment: gradeComment }),
-      { "user-id": targetUserId },
+      { userId: targetUserId },
       "play",
     );
     sendEvent("submissions.changed", JSON.stringify(getSubmissions()), null, "edit");
@@ -113,12 +113,12 @@ export function onAction(name, data, context, permission) {
   if (name === "essay.delete") {
     if (permission !== "edit") return "";
     const targetUserId = value.user_id;
-    const submissionId = JSON.parse(getField("submission_id", { "user-id": targetUserId }));
+    const submissionId = JSON.parse(getField("submission_id", { userId: targetUserId }));
     if (submissionId >= 0) {
       logDelete("submissions", submissionId, null);
     }
-    setField("submission_id", JSON.stringify(-1), { "user-id": targetUserId });
-    setField("draft", JSON.stringify(""), { "user-id": targetUserId });
+    setField("submission_id", JSON.stringify(-1), { userId: targetUserId });
+    setField("draft", JSON.stringify(""), { userId: targetUserId });
     sendEvent("submissions.changed", JSON.stringify(getSubmissions()), null, "edit");
     return "";
   }
@@ -126,11 +126,11 @@ export function onAction(name, data, context, permission) {
   if (name === "essay.unsubmit") {
     if (permission !== "edit") return "";
     const targetUserId = value.user_id;
-    const submissionId = JSON.parse(getField("submission_id", { "user-id": targetUserId }));
+    const submissionId = JSON.parse(getField("submission_id", { userId: targetUserId }));
     if (submissionId >= 0) {
       logDelete("submissions", submissionId, null);
     }
-    setField("submission_id", JSON.stringify(-1), { "user-id": targetUserId });
+    setField("submission_id", JSON.stringify(-1), { userId: targetUserId });
     sendEvent("submissions.changed", JSON.stringify(getSubmissions()), null, "edit");
     return "";
   }

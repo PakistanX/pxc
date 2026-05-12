@@ -266,7 +266,9 @@ import { storageRead, storageWrite, storageExists, storageUrl, storageList, stor
 
 // Send an event to all connected clients in the current activity
 // sendEvent(name, value, context, permission)
-//   context: null = current activity (default), or e.g. { userId: "alice" } to target a specific user
+//   context: null = current activity (default), or e.g. { userId: "alice" } to target a specific user.
+//            Fields are camelCase in JS (userId/courseId/activityId) even though the WIT uses kebab-case;
+//            passing kebab-case keys is silently ignored.
 //   permission: minimum permission to receive the event ("view", "play", or "edit")
 sendEvent("answer.result", JSON.stringify({ correct: true }), null, "play");
 

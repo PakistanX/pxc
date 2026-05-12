@@ -1,18 +1,23 @@
 """Tests for the essay sample activity."""
 
 import json
-from typing import Any
+from typing import Any, cast
 
 from pxc.lib.permission import Permission
+from pxc.lib.runtime import PendingEvent
 from pxc.lib.tests.samples.conftest import make_runtime
 
 
-def _saved_event_count(events: list[dict[str, Any]], name: str) -> int:
+def _saved_event_count(events: list[PendingEvent], name: str) -> int:
     return sum(1 for e in events if e["name"] == name)
 
 
-def _events_by_name(events: list[dict[str, Any]], name: str) -> list[dict[str, Any]]:
+def _events_by_name(events: list[PendingEvent], name: str) -> list[PendingEvent]:
     return [e for e in events if e["name"] == name]
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    return cast(dict[str, Any], value)
 
 
 def test_get_state_defaults_play() -> None:
@@ -42,7 +47,10 @@ def test_config_save() -> None:
     rt = make_runtime("essay", permission=Permission.edit)
     rt.on_action(
         "config.save",
-        {"instructions": "Write a short essay about X.", "criteria": "Look for clarity and depth."},
+        {
+            "instructions": "Write a short essay about X.",
+            "criteria": "Look for clarity and depth.",
+        },
     )
     state = rt.get_state()
     assert state["instructions"] == "Write a short essay about X."
@@ -87,9 +95,10 @@ def test_essay_submit() -> None:
     rt.on_action("essay.submit", "My final essay.")
     state = rt.get_state()
     assert state["submission"] is not None
-    assert state["submission"]["text"] == "My final essay."
-    assert state["submission"]["status"] == "submitted"
-    assert state["submission"]["user_id"] == "alice"
+    submission = _as_dict(state["submission"])
+    assert submission["text"] == "My final essay."
+    assert submission["status"] == "submitted"
+    assert submission["user_id"] == "alice"
     events = rt.clear_pending_events()
     assert _saved_event_count(events, "essay.submitted") == 1
     assert _saved_event_count(events, "submissions.changed") == 1
@@ -104,7 +113,7 @@ def test_essay_save_rejected_after_submit() -> None:
     state = rt.get_state()
     # Draft is the submitted text (submit syncs draft) and is not changed by post-submit saves
     assert state["draft"] == "Final text."
-    assert state["submission"]["text"] == "Final text."
+    assert _as_dict(state["submission"])["text"] == "Final text."
     events = rt.clear_pending_events()
     assert _saved_event_count(events, "essay.saved") == 0
 
@@ -133,7 +142,7 @@ def test_essay_submit_twice_rejected() -> None:
     rt.clear_pending_events()
     rt.on_action("essay.submit", "Second submission attempt.")
     state = rt.get_state()
-    assert state["submission"]["text"] == "First submission."
+    assert _as_dict(state["submission"])["text"] == "First submission."
     # No new submission event
     events = rt.clear_pending_events()
     assert _saved_event_count(events, "essay.submitted") == 0
@@ -173,9 +182,10 @@ def test_essay_grade() -> None:
     rt.user_id = "alice"
     rt.permission = Permission.play
     alice_state = rt.get_state()
-    assert alice_state["submission"]["status"] == "graded"
-    assert alice_state["submission"]["grade"] == 0.85
-    assert alice_state["submission"]["grade_comment"] == "Well done!"
+    alice_sub = _as_dict(alice_state["submission"])
+    assert alice_sub["status"] == "graded"
+    assert alice_sub["grade"] == 0.85
+    assert alice_sub["grade_comment"] == "Well done!"
 
 
 def test_essay_grade_no_submission_noop() -> None:
@@ -314,4 +324,4 @@ def test_grade_then_regrade() -> None:
     rt.user_id = "alice"
     rt.permission = Permission.play
     alice_state = rt.get_state()
-    assert alice_state["submission"]["grade"] == 0.9
+    assert _as_dict(alice_state["submission"])["grade"] == 0.9
