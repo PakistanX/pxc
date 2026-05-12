@@ -37,6 +37,9 @@
         "user": {
           "type": "string"
         },
+        "username": {
+          "type": "string"
+        },
         "text": {
           "type": "string"
         }

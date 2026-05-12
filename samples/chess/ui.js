@@ -18,7 +18,19 @@ export function setup(activity) {
   const canAct = activity.permission !== "view";
   const isEditor = activity.permission === "edit";
 
-  let { fen, white, black, status, result, records, discord_webhook_url } = activity.state;
+  let { fen, white, black, status, result, records, discord_webhook_url, usernames } = activity.state;
+  let nameMap = listToMap(usernames);
+  let recordNameMap = nameMap;
+
+  function listToMap(list) {
+    return Object.fromEntries((list || []).map((u) => [u.id, u.name]));
+  }
+  function nameOf(id) {
+    return (id && nameMap[id]) || id;
+  }
+  function recordNameOf(id) {
+    return (id && recordNameMap[id]) || id;
+  }
   let selected = null; // selected square like "e2"
   let legalMoves = []; // [{from, to, promotion}, ...]
   let pendingPromotion = null; // {from, to} when awaiting promo choice
@@ -102,7 +114,7 @@ export function setup(activity) {
       const turnUser = turn === "w" ? white : black;
       const msg = turnUser === userId
         ? `<strong>Your turn</strong>${inCheck ? " (check!)" : ""}`
-        : `${escapeHtml(turnUser)}'s turn${inCheck ? " (check!)" : ""}`;
+        : `${escapeHtml(nameOf(turnUser))}'s turn${inCheck ? " (check!)" : ""}`;
       statusHtml = `<div class="cs-status">${msg}`;
       if (isEditor) {
         statusHtml += `<button class="cs-btn" id="cs-stop" style="margin-left: 8px;">Stop game</button>`;
@@ -114,7 +126,7 @@ export function setup(activity) {
         msg = "Game over: draw";
       } else {
         const winnerUser = result === "white" ? white : black;
-        msg = `Checkmate! ${escapeHtml(winnerUser)} wins`;
+        msg = `Checkmate! ${escapeHtml(nameOf(winnerUser))} wins`;
       }
       statusHtml = `<div class="cs-status">${msg}</div>`;
       if (canAct) {
@@ -125,11 +137,11 @@ export function setup(activity) {
     let playersHtml = `
       <div class="cs-players">
         <div class="cs-player ${turn === "w" && status === "playing" ? "cs-active" : ""}">
-          <span class="cs-dot cs-white-dot"></span> ${white ? escapeHtml(white) : "(empty)"}
+          <span class="cs-dot cs-white-dot"></span> ${white ? escapeHtml(nameOf(white)) : "(empty)"}
           ${isEditor && status === "waiting" && white && !black ? `<button class="cs-player-remove" data-player="white">remove</button>` : ""}
         </div>
         <div class="cs-player ${turn === "b" && status === "playing" ? "cs-active" : ""}">
-          <span class="cs-dot cs-black-dot"></span> ${black ? escapeHtml(black) : "(empty)"}
+          <span class="cs-dot cs-black-dot"></span> ${black ? escapeHtml(nameOf(black)) : "(empty)"}
           ${isEditor && status === "waiting" && black && !white ? `<button class="cs-player-remove" data-player="black">remove</button>` : ""}
         </div>
       </div>`;
@@ -150,11 +162,11 @@ export function setup(activity) {
     if (records.length > 0) {
       const rows = records.map((r) => {
         const v = r.value;
-        const res = v.winner ? `${escapeHtml(v.winner)} (${v.result})` : v.result;
+        const res = v.winner ? `${escapeHtml(recordNameOf(v.winner))} (${v.result})` : v.result;
         const del = isEditor
           ? `<button class="cs-del" data-id="${r.id}">x</button>` : "";
         return `<tr>
-          <td>${escapeHtml(v.white)}</td><td>${escapeHtml(v.black)}</td>
+          <td>${escapeHtml(recordNameOf(v.white))}</td><td>${escapeHtml(recordNameOf(v.black))}</td>
           <td>${res}</td><td>${del}</td>
         </tr>`;
       }).join("");
@@ -382,13 +394,15 @@ export function setup(activity) {
       black = value.black;
       status = value.status;
       result = value.result;
+      nameMap = listToMap(value.usernames);
       selected = null;
       legalMoves = [];
       pendingPromotion = null;
       render();
     }
     if (name === "records.changed") {
-      records = value;
+      records = value.records;
+      recordNameMap = listToMap(value.usernames);
       render();
     }
     if (name === "webhook.error") {

@@ -13,26 +13,58 @@ import {
   logAppend,
   logGetRange,
   logDelete,
+  getUsernames,
 } from "pxc:sandbox/state";
 import { httpRequest } from "pxc:sandbox/http";
 import { Chess } from "chess.js";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+function resolveNames(ids) {
+  const unique = [...new Set(ids.filter((x) => x))];
+  return Object.fromEntries(getUsernames(unique));
+}
+
+// Convert a {id: name} map into the [{id, name}, ...] shape used in events
+// (the schema builder forbids freeform-keyed objects).
+function namesToList(map) {
+  return Object.entries(map).map(([id, name]) => ({ id, name }));
+}
+
+function collectRecordIds(records) {
+  const ids = [];
+  for (const r of records) {
+    ids.push(r.value.white, r.value.black);
+    if (r.value.winner) ids.push(r.value.winner);
+  }
+  return ids;
+}
+
 function broadcastGameState() {
+  const white = JSON.parse(getField("white"));
+  const black = JSON.parse(getField("black"));
   const state = {
     fen: JSON.parse(getField("fen")),
-    white: JSON.parse(getField("white")),
-    black: JSON.parse(getField("black")),
+    white,
+    black,
     status: JSON.parse(getField("status")),
     result: JSON.parse(getField("result")),
+    usernames: namesToList(resolveNames([white, black])),
   };
   sendEvent("game.updated", JSON.stringify(state), null, "view");
 }
 
 function broadcastRecords() {
   const records = JSON.parse(logGetRange("records", 0, 1000));
-  sendEvent("records.changed", JSON.stringify(records), null, "view");
+  sendEvent(
+    "records.changed",
+    JSON.stringify({
+      records,
+      usernames: namesToList(resolveNames(collectRecordIds(records))),
+    }),
+    null,
+    "view",
+  );
 }
 
 function postToDiscord(message) {
@@ -73,13 +105,15 @@ export function onAction(name, data, context, permission) {
     const black = JSON.parse(getField("black"));
     if (white === userId || black === userId) return "";
 
+    const joinerName = resolveNames([userId])[userId] || userId;
     if (!white) {
       setField("white", JSON.stringify(userId));
-      postToDiscord(`♟️ Player \`${userId}\` joined the chess game and is looking for a contender!`);
+      postToDiscord(`♟️ Player \`${joinerName}\` joined the chess game and is looking for a contender!`);
     } else if (!black) {
       setField("black", JSON.stringify(userId));
       setField("status", JSON.stringify("playing"));
-      postToDiscord(`⚔️ Player \`${userId}\` joined! The chess game between \`${white}\` and \`${userId}\` is starting!`);
+      const whiteName = resolveNames([white])[white] || white;
+      postToDiscord(`⚔️ Player \`${joinerName}\` joined! The chess game between \`${whiteName}\` and \`${joinerName}\` is starting!`);
     }
     broadcastGameState();
     return "";
@@ -183,12 +217,17 @@ export function onAction(name, data, context, permission) {
 }
 
 export function getState(context, permission) {
+  const white = JSON.parse(getField("white"));
+  const black = JSON.parse(getField("black"));
+  const records = JSON.parse(logGetRange("records", 0, 1000));
+  const ids = [white, black, ...collectRecordIds(records)];
   return JSON.stringify({
     fen: JSON.parse(getField("fen")),
-    white: JSON.parse(getField("white")),
-    black: JSON.parse(getField("black")),
+    white,
+    black,
     status: JSON.parse(getField("status")),
     result: JSON.parse(getField("result")),
-    records: JSON.parse(logGetRange("records", 0, 1000)),
+    records,
+    usernames: namesToList(resolveNames(ids)),
   });
 }

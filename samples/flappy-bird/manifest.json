@@ -55,6 +55,7 @@
         "type": "object",
         "properties": {
           "user": { "type": "string" },
+          "username": { "type": "string" },
           "score": { "type": "integer" }
         }
       }

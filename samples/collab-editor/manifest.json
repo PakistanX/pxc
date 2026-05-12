@@ -58,6 +58,9 @@
         },
         "user": {
           "type": "string"
+        },
+        "username": {
+          "type": "string"
         }
       }
     },
@@ -65,6 +68,9 @@
       "type": "object",
       "properties": {
         "user": {
+          "type": "string"
+        },
+        "username": {
           "type": "string"
         },
         "index": {

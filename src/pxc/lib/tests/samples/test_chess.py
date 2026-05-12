@@ -213,7 +213,7 @@ def test_records_delete_emits_event() -> None:
     records_events = [e for e in events if e["name"] == "records.changed"]
     assert len(records_events) == 1
     updated = json.loads(records_events[0]["value"])
-    assert len(updated) == 0
+    assert len(updated["records"]) == 0
 
 
 def test_player_remove_single_white() -> None:

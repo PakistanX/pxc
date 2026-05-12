@@ -173,15 +173,16 @@ export function setup(activity) {
           v.status === "graded" && typeof v.grade === "number"
             ? `${Math.round(v.grade * 100)}%`
             : "—";
+        const displayName = v.username || v.user_id || "";
         return `
-          <tr data-user-id="${escapeHtml(v.user_id || "")}">
-            <td>${escapeHtml(v.user_id || "")}</td>
+          <tr data-user-id="${escapeHtml(v.user_id || "")}" data-username="${escapeHtml(displayName)}">
+            <td>${escapeHtml(displayName)}</td>
             <td>${statusBadge}</td>
             <td>${gradeCell}</td>
             <td>
-              <button class="essay-action-btn essay-grade-btn" data-user-id="${escapeHtml(v.user_id || "")}">Grade</button>
-              <button class="essay-action-btn essay-unsubmit-btn" data-user-id="${escapeHtml(v.user_id || "")}">Un-submit</button>
-              <button class="essay-action-btn essay-delete-btn" data-user-id="${escapeHtml(v.user_id || "")}">Delete</button>
+              <button class="essay-action-btn essay-grade-btn" data-user-id="${escapeHtml(v.user_id || "")}" data-username="${escapeHtml(displayName)}">Grade</button>
+              <button class="essay-action-btn essay-unsubmit-btn" data-user-id="${escapeHtml(v.user_id || "")}" data-username="${escapeHtml(displayName)}">Un-submit</button>
+              <button class="essay-action-btn essay-delete-btn" data-user-id="${escapeHtml(v.user_id || "")}" data-username="${escapeHtml(displayName)}">Delete</button>
             </td>
           </tr>
         `;
@@ -232,7 +233,8 @@ export function setup(activity) {
     el.querySelectorAll(".essay-unsubmit-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const u = btn.dataset.userId;
-        if (confirm(`Un-submit essay for "${u}"? Their submission will be removed and they will be able to edit again.`)) {
+        const name = btn.dataset.username || u;
+        if (confirm(`Un-submit essay for "${name}"? Their submission will be removed and they will be able to edit again.`)) {
           activity.sendAction("essay.unsubmit", { user_id: u });
         }
       });
@@ -241,7 +243,8 @@ export function setup(activity) {
     el.querySelectorAll(".essay-delete-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const u = btn.dataset.userId;
-        if (confirm(`Delete essay and draft for "${u}"? This cannot be undone.`)) {
+        const name = btn.dataset.username || u;
+        if (confirm(`Delete essay and draft for "${name}"? This cannot be undone.`)) {
           activity.sendAction("essay.delete", { user_id: u });
         }
       });
@@ -260,6 +263,7 @@ export function setup(activity) {
     const sub = (submissions || []).find((s) => (s.value || {}).user_id === targetUserId);
     const v = sub ? sub.value : null;
     const text = v ? v.text || "" : "";
+    const displayName = (v && v.username) || targetUserId;
     const currentGrade = v && v.status === "graded" && typeof v.grade === "number" ? v.grade : 0;
     const currentComment = v && v.grade_comment ? v.grade_comment : "";
     const criteriaHtml = criteria
@@ -268,7 +272,7 @@ export function setup(activity) {
 
     panel.innerHTML = `
       <div class="essay-grade-panel">
-        <h3>Grade: ${escapeHtml(targetUserId)}</h3>
+        <h3>Grade: ${escapeHtml(displayName)}</h3>
         ${criteriaHtml}
         <div class="essay-submitted-label">Submitted essay:</div>
         <div class="essay-submitted-text">${marked.parse(text)}</div>

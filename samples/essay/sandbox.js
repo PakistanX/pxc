@@ -6,10 +6,17 @@ import {
   logGet,
   logGetRange,
   logDelete,
+  getUsernames,
 } from "pxc:sandbox/state";
 
 function getSubmissions() {
-  return JSON.parse(logGetRange("submissions", 0, 1000, null));
+  const submissions = JSON.parse(logGetRange("submissions", 0, 1000, null));
+  const ids = [...new Set(submissions.map((s) => s.value.user_id).filter((x) => x))];
+  const names = Object.fromEntries(getUsernames(ids));
+  for (const s of submissions) {
+    s.value.username = names[s.value.user_id] || s.value.user_id;
+  }
+  return submissions;
 }
 
 export function getState(context, permission) {

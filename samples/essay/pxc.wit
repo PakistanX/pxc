@@ -37,6 +37,9 @@ interface state {
     log-append: func(name: string, value: string, context: option<context>) -> u32;
     log-delete: func(name: string, entry-id: u32, context: option<context>) -> bool;
     log-delete-range: func(name: string, from-id: u32, to-id: u32, context: option<context>) -> u32;
+
+    // Resolve user IDs to display names. Returns (id, name) pairs for known IDs only.
+    get-usernames: func(ids: list<string>) -> list<tuple<string, string>>;
 }
 
 world activity {

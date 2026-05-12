@@ -4,7 +4,13 @@
 // - game.position: relay the caller's bird position to all players.
 // - game.over: persist best_score (per user) and update the course top-10.
 
-import { getField, setField, sendEvent } from "pxc:sandbox/state";
+import { getField, getUsernames, setField, sendEvent } from "pxc:sandbox/state";
+
+function enrichTopScores(top) {
+  const ids = [...new Set(top.map((s) => s.user).filter((x) => x))];
+  const names = Object.fromEntries(getUsernames(ids));
+  return top.map((s) => ({ ...s, username: names[s.user] || s.user }));
+}
 
 export function onAction(name, data, context, permission) {
   const value = JSON.parse(data);
@@ -28,7 +34,12 @@ export function onAction(name, data, context, permission) {
     if (index >= 0 && index < top.length) {
       top.splice(index, 1);
       setField("top_scores", JSON.stringify(top));
-      sendEvent("fields.change.top_scores", JSON.stringify(top), null, "play");
+      sendEvent(
+        "fields.change.top_scores",
+        JSON.stringify(enrichTopScores(top)),
+        null,
+        "play",
+      );
     }
     return "";
   }
@@ -54,7 +65,7 @@ export function onAction(name, data, context, permission) {
     setField("top_scores", JSON.stringify(trimmed));
     sendEvent(
       "fields.change.top_scores",
-      JSON.stringify(trimmed),
+      JSON.stringify(enrichTopScores(trimmed)),
       null,
       "play",
     );
@@ -67,6 +78,6 @@ export function onAction(name, data, context, permission) {
 export function getState(context, permission) {
   return JSON.stringify({
     best_score: JSON.parse(getField("best_score")),
-    top_scores: JSON.parse(getField("top_scores")),
+    top_scores: enrichTopScores(JSON.parse(getField("top_scores"))),
   });
 }

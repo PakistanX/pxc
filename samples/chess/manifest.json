@@ -89,22 +89,47 @@
         "white": { "type": "string" },
         "black": { "type": "string" },
         "status": { "type": "string" },
-        "result": { "type": "string" }
+        "result": { "type": "string" },
+        "usernames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          }
+        }
       }
     },
     "records.changed": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer" },
-          "value": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
             "type": "object",
             "properties": {
-              "white": { "type": "string" },
-              "black": { "type": "string" },
-              "result": { "type": "string" },
-              "winner": { "type": "string" }
+              "id": { "type": "integer" },
+              "value": {
+                "type": "object",
+                "properties": {
+                  "white": { "type": "string" },
+                  "black": { "type": "string" },
+                  "result": { "type": "string" },
+                  "winner": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "usernames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" }
             }
           }
         }

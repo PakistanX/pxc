@@ -3,7 +3,11 @@
 // Actions handled:
 // - chat.post: Append a message and broadcast it
 
-import { logAppend, logGetRange, sendEvent } from "pxc:sandbox/state";
+import { getUsernames, logAppend, logGetRange, sendEvent } from "pxc:sandbox/state";
+
+function resolveNames(ids) {
+  return Object.fromEntries(getUsernames([...new Set(ids)]));
+}
 
 export function onAction(name, data, context, permission) {
   const value = JSON.parse(data);
@@ -11,7 +15,13 @@ export function onAction(name, data, context, permission) {
     const user = context.userId;
     const entry = { user, text: value.text };
     const id = logAppend("messages", JSON.stringify(entry));
-    sendEvent("chat.new", JSON.stringify({ id, user, text: value.text }), null, "play");
+    const username = resolveNames([user])[user] || user;
+    sendEvent(
+      "chat.new",
+      JSON.stringify({ id, user, username, text: value.text }),
+      null,
+      "play",
+    );
   }
 
   return "";
@@ -19,5 +29,9 @@ export function onAction(name, data, context, permission) {
 
 export function getState() {
   const messages = JSON.parse(logGetRange("messages", 0, 1000));
+  const names = resolveNames(messages.map((m) => m.value.user));
+  for (const m of messages) {
+    m.value.username = names[m.value.user] || m.value.user;
+  }
   return JSON.stringify({ messages });
 }

@@ -47,7 +47,7 @@ export function setup(activity) {
   function appendMessage(container, msg) {
     const div = document.createElement("div");
     div.className = "chat-msg";
-    div.innerHTML = `<strong>${escapeHtml(msg.user)}:</strong> ${escapeHtml(msg.text)}`;
+    div.innerHTML = `<strong>${escapeHtml(msg.username || msg.user)}:</strong> ${escapeHtml(msg.text)}`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
   }

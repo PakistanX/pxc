@@ -275,7 +275,7 @@ export function setup(activity) {
     topEl.innerHTML = scores
       .map((s, i) => {
         const del = permission === "edit" ? ` <button class="fb-del" data-del="${i}">\u00d7</button>` : "";
-        return `<li>${escapeHtml(s.user)} — <strong>${s.score | 0}</strong>${del}</li>`;
+        return `<li>${escapeHtml(s.username || s.user)} — <strong>${s.score | 0}</strong>${del}</li>`;
       })
       .join("");
     if (permission === "edit") {

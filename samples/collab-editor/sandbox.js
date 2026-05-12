@@ -4,7 +4,7 @@
 // - doc.update: Merge Yjs update into stored state, broadcast to all
 // - cursor.move: Broadcast cursor position to all clients
 
-import { getField, sendEvent, setField } from "pxc:sandbox/state";
+import { getField, getUsernames, sendEvent, setField } from "pxc:sandbox/state";
 import * as Y from "yjs";
 
 function base64ToBytes(base64) {
@@ -27,6 +27,7 @@ function bytesToBase64(bytes) {
 export function onAction(name, data, context, permission) {
   const value = JSON.parse(data);
   const user = context.userId;
+  const username = Object.fromEntries(getUsernames([user]))[user] || user;
 
   if (name === "config.save") {
     if (permission !== "edit") {
@@ -50,10 +51,11 @@ export function onAction(name, data, context, permission) {
     const fullState = Y.encodeStateAsUpdate(doc);
     setField("doc_state", JSON.stringify(bytesToBase64(fullState)));
     setField("content", JSON.stringify(doc.getText("codemirror").toString()));
-    sendEventToAllViewers("doc.update", { data: value.data, user });
+    sendEventToAllViewers("doc.update", { data: value.data, user, username });
   } else if (name === "cursor.move") {
     sendEventToAllViewers("cursor.move", {
       user,
+      username,
       index: value.index,
       length: value.length,
     });

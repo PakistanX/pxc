@@ -91,6 +91,7 @@
             "type": "object",
             "properties": {
               "user_id": { "type": "string" },
+              "username": { "type": "string" },
               "text": { "type": "string" },
               "status": { "type": "string" },
               "grade": { "type": "number" },

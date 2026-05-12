@@ -189,7 +189,12 @@ export function setup(activity) {
       const userId = value.user;
       if (userId === activity.context.user_id) return;
       const color = getUserColor(userId);
-      remoteCursors.set(userId, { index: value.index, length: value.length, color });
+      remoteCursors.set(userId, {
+        index: value.index,
+        length: value.length,
+        color,
+        username: value.username || userId,
+      });
       renderRemoteCursors();
       renderUserDots();
     }
@@ -222,7 +227,7 @@ export function setup(activity) {
       label.style.backgroundColor = cursor.color;
       label.style.left = (coords.left - wrapRect.left) + "px";
       label.style.top = (coords.top - wrapRect.top) + "px";
-      label.textContent = userId;
+      label.textContent = cursor.username || userId;
       editorWrap.appendChild(label);
     }
   }
@@ -234,7 +239,7 @@ export function setup(activity) {
       const dot = document.createElement("span");
       dot.className = "collab-user-dot";
       dot.style.backgroundColor = cursor.color;
-      dot.title = userId;
+      dot.title = cursor.username || userId;
       usersContainer.appendChild(dot);
     }
   }
