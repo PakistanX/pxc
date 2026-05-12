@@ -31,7 +31,6 @@ src/pxc/
     sandbox/
       manifest.schema.json  JSON Schema for activity manifests
       pxc.wit              Canonical WIT: types + state/grading/http/storage/analytics interfaces
-      index.js              JS sandbox helper lib
     tests/
       runtime/            Runtime integration tests
       samples/            Per-sample activity tests
