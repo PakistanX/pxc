@@ -20,6 +20,10 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from pathlib import Path
+
+from pxc.lib.field_store import FieldStore
+from pxc.lib.file_storage import FileStorage
 from pxc.lib.runtime import ActivityRuntime, AssetAccessError
 from pxc.lib.actions import ActionValidationError
 from pxc.lib.event_bus import EventBus
@@ -77,6 +81,37 @@ app.include_router(lti_router)
 # ── Activity endpoints (token-gated) ─────────────────────────────────
 
 
+class LtiActivityRuntime(ActivityRuntime):
+    def __init__(
+        self,
+        activity_dir: Path,
+        field_store: FieldStore,
+        file_storage: FileStorage,
+        activity_id: str,
+        course_id: str,
+        user_id: str,
+        permission: Permission,
+        *,
+        user_name: str,
+    ) -> None:
+        self._user_name = user_name
+        super().__init__(
+            activity_dir,
+            field_store,
+            file_storage,
+            activity_id,
+            course_id,
+            user_id,
+            permission,
+        )
+
+    def get_usernames(self, ids: list[str]) -> list[tuple[str, str]]:
+        return [
+            (uid, self._user_name if uid == self._user_id and self._user_name else uid)
+            for uid in ids
+        ]
+
+
 def _load_activity_from_token(token: str) -> ActivityRuntime:
     """Decode session token and build ActivityContext."""
     claims = launch_handler.decode_session_token(token)
@@ -85,7 +120,7 @@ def _load_activity_from_token(token: str) -> ActivityRuntime:
     if not (activity_dir / "manifest.json").exists():
         raise HTTPException(status_code=404, detail="Activity not found")
 
-    return ActivityRuntime(
+    return LtiActivityRuntime(
         activity_dir,
         field_store,
         file_storage,
@@ -93,6 +128,7 @@ def _load_activity_from_token(token: str) -> ActivityRuntime:
         course_id=claims["course_id"],
         user_id=claims["sub"],
         permission=Permission(claims["permission"]),
+        user_name=claims.get("user_name", ""),
     )
 
 

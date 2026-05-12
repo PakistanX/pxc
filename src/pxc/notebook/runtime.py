@@ -12,7 +12,7 @@ from pxc.lib.manifest_types import Scope
 from pxc.lib.runtime import ActivityRuntime
 from pxc.notebook import constants, db
 from pxc.notebook.field_store import SQLiteFieldStore
-from pxc.notebook.models import ActivityStatement
+from pxc.notebook.models import ActivityStatement, User
 
 FILE_STORAGE = LocalFileStorage(constants.DIST_DIR / "notebook" / "storage")
 FIELD_STORE = SQLiteFieldStore()
@@ -48,6 +48,12 @@ class NotebookActivityRuntime(ActivityRuntime):
         if self._is_course_activity:
             interfaces["analytics"] = {"report-query": self.report_query}
         return interfaces
+
+    def get_usernames(self, ids: list[str]) -> list[tuple[str, str]]:
+        with db.session_scope() as session:
+            rows = session.exec(select(User).where(col(User.id).in_(ids))).all()
+        by_id = {row.id: row.email.split("@", 1)[0] for row in rows}
+        return [(uid, by_id.get(uid, uid)) for uid in ids]
 
     def report_completed(self) -> bool:
         self._record_statement("completed", None)

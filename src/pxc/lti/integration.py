@@ -128,13 +128,14 @@ class LaunchHandler:
     ) -> str:
         """Create a short-lived session JWT."""
         now = int(time.time())
-        payload = {
+        payload: dict[str, str | int] = {
             "sub": launch_data.user_id,
             "course_id": launch_data.context_id or "unknown",
             "activity_type": activity_type,
             "permission": permission.value,
             "iat": now,
             "exp": now + 7200,
+            "user_name": launch_data.name,
         }
         token: str = jwt.encode(payload, self.session_secret, algorithm="HS256")
         return token

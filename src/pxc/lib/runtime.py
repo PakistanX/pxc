@@ -187,6 +187,7 @@ class ActivityRuntime:
                 "log-append": self.log_append,
                 "log-delete": self.log_delete,
                 "log-delete-range": self.log_delete_range,
+                "get-usernames": self.get_usernames,
             },
         }
         if self.capability_checker.is_interface_requested(InterfaceName.grading):
@@ -463,6 +464,14 @@ class ActivityRuntime:
         # We have to return something, otherwise wasmtime complains with "TypeError:
         # expected Variant type"
         return ""
+
+    def get_usernames(self, ids: list[str]) -> list[tuple[str, str]]:
+        """Resolve user IDs to display names.
+
+        By default returns (id, id) for every requested ID. Subclasses may
+        override this to look up human-readable names from a user directory.
+        """
+        return [(uid, uid) for uid in ids]
 
     def get_field(self, name: str, context: SandboxContext | None = None) -> str:
         """Get a field, resolving scope from manifest.

@@ -256,6 +256,7 @@ import {
   sendEvent,
   getField, setField,
   logAppend, logGet, logGetRange, logDelete, logDeleteRange,
+  getUsernames,
 } from "pxc:sandbox/state";
 
 // Opt-in: declare the matching capability in manifest.json
@@ -376,7 +377,7 @@ The host surface is split into one WIT interface per functional area, defined in
 
 | Interface | Gating | Functions |
 |---|---|---|
-| `state` | Always available | `sendEvent`, `getField`, `setField`, `logGet`, `logGetRange`, `logAppend`, `logDelete`, `logDeleteRange` |
+| `state` | Always available | `sendEvent`, `getField`, `setField`, `logGet`, `logGetRange`, `logAppend`, `logDelete`, `logDeleteRange`, `getUsernames` |
 | `grading` | `capabilities.grading: {}` | `submitGrade`, `reportCompleted`, `reportPassed`, `reportFailed`, `reportProgressed`, `reportScored` |
 | `http` | `capabilities.http` | `httpRequest` |
 | `storage` | `capabilities.storage` | `storageRead`, `storageWrite`, `storageExists`, `storageUrl`, `storageList`, `storageDelete` |
@@ -392,6 +393,7 @@ Downstream apps may register additional interfaces (e.g. the notebook app regist
 - `logGetRange(name: str, from_id: int, to_id: int, context: str) -> [{id, value}, ...]`: get entries in range `[from_id, to_id)`
 - `logDelete(name: str, entry_id: int, context: str) -> bool`: delete a single entry, returns whether it existed
 - `logDeleteRange(name: str, from_id: int, to_id: int, context: str) -> int`: delete entries in range, returns count deleted
+- `getUsernames(ids: list<str>) -> [[id, name], ...]`: resolve user IDs to display names. Returns `[id, name]` pairs for known IDs only (unknown IDs are omitted). The resolver is provided by the host app; in the notebook it maps to the email prefix, in LTI it maps the launching user's name from the JWT claims.
 
 **`grading` (requires `capabilities.grading: {}`)** — used to track learner progress (inspired by xAPI/cmi5 verbs):
 

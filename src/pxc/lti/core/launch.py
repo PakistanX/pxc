@@ -23,6 +23,7 @@ class LaunchData:
     deployment_id: str
     user_id: str
     roles: list[str]
+    name: str = ""
     context_id: str | None = None
     context_title: str | None = None
     resource_link_id: str | None = None
@@ -89,6 +90,7 @@ def validate_launch_jwt(
         client_id=client_id,
         deployment_id=deployment_id,
         user_id=claims.get("sub", ""),
+        name=claims.get("name", claims.get("preferred_username", "")),
         roles=roles,
         context_id=context.get("id") if context else None,
         context_title=context.get("title") if context else None,
