@@ -75,6 +75,7 @@ interface storage {
 world activity {
     use types.{context, permission};
     import state;
+    import http;
     export on-action: func(name: string, value: string, context: context, permission: permission) -> string;
     export get-state: func(context: context, permission: permission) -> string;
 }

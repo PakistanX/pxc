@@ -40,6 +40,11 @@
         }
       },
       "scope": "activity"
+    },
+    "discord_webhook_url": {
+      "type": "string",
+      "scope": "activity",
+      "default": ""
     }
   },
   "actions": {
@@ -59,8 +64,21 @@
       "type": "object",
       "properties": {}
     },
+    "player.remove": {
+      "type": "string"
+    },
+    "game.stop": {
+      "type": "object",
+      "properties": {}
+    },
     "records.delete": {
       "type": "integer"
+    },
+    "config.save": {
+      "type": "object",
+      "properties": {
+        "discord_webhook_url": { "type": "string" }
+      }
     }
   },
   "events": {
@@ -91,6 +109,12 @@
           }
         }
       }
+    },
+    "webhook.error": {
+      "type": "string"
     }
+  },
+  "capabilities": {
+    "http": { "allowed_hosts": ["discord.com"] }
   }
 }

@@ -18,10 +18,11 @@ export function setup(activity) {
   const canAct = activity.permission !== "view";
   const isEditor = activity.permission === "edit";
 
-  let { fen, white, black, status, result, records } = activity.state;
+  let { fen, white, black, status, result, records, discord_webhook_url } = activity.state;
   let selected = null; // selected square like "e2"
   let legalMoves = []; // [{from, to, promotion}, ...]
   let pendingPromotion = null; // {from, to} when awaiting promo choice
+  let webhookError = null; // error message from webhook.error event
 
   function myColor() {
     if (white === userId) return "w";
@@ -102,7 +103,11 @@ export function setup(activity) {
       const msg = turnUser === userId
         ? `<strong>Your turn</strong>${inCheck ? " (check!)" : ""}`
         : `${escapeHtml(turnUser)}'s turn${inCheck ? " (check!)" : ""}`;
-      statusHtml = `<div class="cs-status">${msg}</div>`;
+      statusHtml = `<div class="cs-status">${msg}`;
+      if (isEditor) {
+        statusHtml += `<button class="cs-btn" id="cs-stop" style="margin-left: 8px;">Stop game</button>`;
+      }
+      statusHtml += `</div>`;
     } else if (status === "ended") {
       let msg = "";
       if (result === "draw") {
@@ -121,11 +126,25 @@ export function setup(activity) {
       <div class="cs-players">
         <div class="cs-player ${turn === "w" && status === "playing" ? "cs-active" : ""}">
           <span class="cs-dot cs-white-dot"></span> ${white ? escapeHtml(white) : "(empty)"}
+          ${isEditor && status === "waiting" && white && !black ? `<button class="cs-player-remove" data-player="white">remove</button>` : ""}
         </div>
         <div class="cs-player ${turn === "b" && status === "playing" ? "cs-active" : ""}">
           <span class="cs-dot cs-black-dot"></span> ${black ? escapeHtml(black) : "(empty)"}
+          ${isEditor && status === "waiting" && black && !white ? `<button class="cs-player-remove" data-player="black">remove</button>` : ""}
         </div>
       </div>`;
+
+    let configHtml = "";
+    if (isEditor) {
+      const errorMsg = webhookError ? `<div class="cs-error-banner">${escapeHtml(webhookError)} <button class="cs-error-close" id="cs-error-close">×</button></div>` : "";
+      configHtml = `
+        <div class="cs-config">
+          <h4>Discord Webhook</h4>
+          ${errorMsg}
+          <input type="text" id="cs-webhook-url" placeholder="Discord webhook URL" value="${escapeHtml(discord_webhook_url || "")}" class="cs-config-input" />
+          <button class="cs-btn" id="cs-save-config">Save</button>
+        </div>`;
+    }
 
     let recordsHtml = "";
     if (records.length > 0) {
@@ -211,6 +230,8 @@ export function setup(activity) {
         .cs-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #999; }
         .cs-white-dot { background: #fff; }
         .cs-black-dot { background: #333; }
+        .cs-player-remove { background: none; border: none; color: #c00; cursor: pointer; font-size: 12px; padding: 0 4px; margin-left: auto; text-decoration: underline; }
+        .cs-player-remove:hover { font-weight: bold; }
         .cs-records h4 { margin: 12px 0 6px; }
         .cs-records table { border-collapse: collapse; font-size: 13px; width: 100%; }
         .cs-records th, .cs-records td { padding: 3px 6px; border: 1px solid #ddd; text-align: left; }
@@ -220,6 +241,11 @@ export function setup(activity) {
         .cs-promo-picker { display: flex; gap: 8px; background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .cs-promo-btn { font-size: 40px; background: none; border: 2px solid #ccc; border-radius: 4px; padding: 8px; cursor: pointer; }
         .cs-promo-btn:hover { border-color: #4a90d9; background: #e8f0fe; }
+        .cs-config { margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 4px; }
+        .cs-config h4 { margin: 0 0 8px 0; }
+        .cs-config-input { width: 100%; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        .cs-error-banner { background: #ffebee; border: 1px solid #f44336; color: #c62828; padding: 8px; border-radius: 4px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .cs-error-close { background: none; border: none; color: #c62828; cursor: pointer; font-size: 18px; padding: 0; }
       </style>
       <div class="cs-wrap">
         <div class="cs-board-area">
@@ -233,6 +259,7 @@ export function setup(activity) {
           ${promoHtml}
         </div>
         <div class="cs-panel">
+          ${configHtml}
           ${playersHtml}
           ${statusHtml}
           ${recordsHtml}
@@ -244,6 +271,22 @@ export function setup(activity) {
   }
 
   function bindEvents() {
+    const saveConfigBtn = el.querySelector("#cs-save-config");
+    if (saveConfigBtn) {
+      saveConfigBtn.addEventListener("click", () => {
+        const url = el.querySelector("#cs-webhook-url").value;
+        activity.sendAction("config.save", { discord_webhook_url: url });
+      });
+    }
+
+    const errorClose = el.querySelector("#cs-error-close");
+    if (errorClose) {
+      errorClose.addEventListener("click", () => {
+        webhookError = null;
+        render();
+      });
+    }
+
     const joinBtn = el.querySelector("#cs-join");
     if (joinBtn) {
       joinBtn.addEventListener("click", () => activity.sendAction("game.join", {}));
@@ -253,6 +296,18 @@ export function setup(activity) {
     if (resetBtn) {
       resetBtn.addEventListener("click", () => activity.sendAction("game.reset", {}));
     }
+
+    const stopBtn = el.querySelector("#cs-stop");
+    if (stopBtn) {
+      stopBtn.addEventListener("click", () => activity.sendAction("game.stop", {}));
+    }
+
+    el.querySelectorAll(".cs-player-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const player = btn.dataset.player;
+        activity.sendAction("player.remove", player === "white" ? white : black);
+      });
+    });
 
     el.querySelectorAll(".cs-del").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -334,6 +389,10 @@ export function setup(activity) {
     }
     if (name === "records.changed") {
       records = value;
+      render();
+    }
+    if (name === "webhook.error") {
+      webhookError = value;
       render();
     }
   };

@@ -214,3 +214,135 @@ def test_records_delete_emits_event() -> None:
     assert len(records_events) == 1
     updated = json.loads(records_events[0]["value"])
     assert len(updated) == 0
+
+
+def test_player_remove_single_white() -> None:
+    rt = make_runtime("chess", permission=Permission.edit, user_id="alice")
+    rt.on_action("game.join", {})
+    rt.clear_pending_events()
+
+    state = rt.get_state()
+    assert state["white"] == "alice"
+    assert state["black"] == ""
+
+    rt.on_action("player.remove", "alice")
+    state = rt.get_state()
+    assert state["white"] == ""
+    assert state["black"] == ""
+    assert state["status"] == "waiting"
+
+
+def test_player_remove_single_black() -> None:
+    rt = make_runtime("chess", permission=Permission.edit)
+    rt.user_id = "alice"
+    rt.on_action("game.join", {})
+    rt.user_id = "bob"
+    rt.on_action("game.join", {})
+    rt.clear_pending_events()
+
+    state = rt.get_state()
+    assert state["status"] == "playing"
+
+    # Set back to edit mode before attempting remove
+    rt.permission = Permission.edit
+    rt.on_action("player.remove", "bob")
+    state = rt.get_state()
+    # Remove only works when exactly one player joined
+    assert state["black"] == "bob"
+
+
+def test_player_remove_requires_edit() -> None:
+    rt = make_runtime("chess", user_id="alice")
+    rt.on_action("game.join", {})
+    rt.clear_pending_events()
+
+    # Play mode cannot remove
+    rt.on_action("player.remove", "alice")
+    state = rt.get_state()
+    assert state["white"] == "alice"
+
+
+def test_player_remove_requires_single_player() -> None:
+    rt = make_runtime("chess", permission=Permission.edit)
+    rt.user_id = "alice"
+    rt.on_action("game.join", {})
+    rt.user_id = "bob"
+    rt.on_action("game.join", {})
+    rt.clear_pending_events()
+
+    # Both players joined, remove should be ignored
+    rt.on_action("player.remove", "alice")
+    state = rt.get_state()
+    assert state["white"] == "alice"
+    assert state["black"] == "bob"
+
+
+def test_player_remove_emits_event() -> None:
+    rt = make_runtime("chess", permission=Permission.edit, user_id="alice")
+    rt.on_action("game.join", {})
+    rt.clear_pending_events()
+
+    rt.on_action("player.remove", "alice")
+    events = rt.clear_pending_events()
+    updated = [e for e in events if e["name"] == "game.updated"]
+    assert len(updated) == 1
+    value = json.loads(updated[0]["value"])
+    assert value["white"] == ""
+
+
+def test_game_stop_during_play() -> None:
+    rt = _setup_game()
+    rt.user_id = "alice"
+    rt.on_action("game.move", {"from": "e2", "to": "e4"})
+    rt.clear_pending_events()
+
+    rt.permission = Permission.edit
+    rt.on_action("game.stop", {})
+    state = rt.get_state()
+    assert state["status"] == "waiting"
+    assert state["white"] == ""
+    assert state["black"] == ""
+    assert state["fen"] == START_FEN
+    assert state["result"] == ""
+
+
+def test_game_stop_requires_edit() -> None:
+    rt = _setup_game()
+    rt.user_id = "alice"
+    rt.on_action("game.move", {"from": "e2", "to": "e4"})
+    rt.clear_pending_events()
+
+    # Play mode cannot stop
+    rt.on_action("game.stop", {})
+    state = rt.get_state()
+    assert state["status"] == "playing"
+
+
+def test_game_stop_requires_playing() -> None:
+    rt = make_runtime("chess", permission=Permission.edit)
+    rt.user_id = "alice"
+    rt.on_action("game.join", {})
+    rt.clear_pending_events()
+
+    # Only one player, game is waiting
+    rt.on_action("game.stop", {})
+    state = rt.get_state()
+    assert state["status"] == "waiting"
+    assert state["white"] == "alice"
+
+
+def test_game_stop_emits_event() -> None:
+    rt = _setup_game()
+    rt.user_id = "alice"
+    rt.on_action("game.move", {"from": "e2", "to": "e4"})
+    rt.clear_pending_events()
+
+    rt.permission = Permission.edit
+    rt.on_action("game.stop", {})
+    events = rt.clear_pending_events()
+    updated = [e for e in events if e["name"] == "game.updated"]
+    assert len(updated) == 1
+    value = json.loads(updated[0]["value"])
+    assert value["status"] == "waiting"
+    assert value["white"] == ""
+    assert value["black"] == ""
