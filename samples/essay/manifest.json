@@ -1,0 +1,104 @@
+{
+  "name": "essay",
+  "ui": "ui.bundle.js",
+  "sandbox": "sandbox.wasm",
+  "fields": {
+    "instructions": {
+      "type": "string",
+      "scope": "activity",
+      "default": ""
+    },
+    "criteria": {
+      "type": "string",
+      "scope": "activity",
+      "default": ""
+    },
+    "draft": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "submission_id": {
+      "type": "integer",
+      "scope": "user,activity",
+      "default": -1
+    },
+    "submissions": {
+      "type": "log",
+      "scope": "activity",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "string" },
+          "text": { "type": "string" },
+          "status": { "type": "string" },
+          "grade": { "type": "number" },
+          "grade_comment": { "type": "string" }
+        }
+      }
+    }
+  },
+  "actions": {
+    "config.save": {
+      "type": "object",
+      "properties": {
+        "instructions": { "type": "string" },
+        "criteria": { "type": "string" }
+      }
+    },
+    "essay.save": { "type": "string" },
+    "essay.submit": { "type": "string" },
+    "essay.grade": {
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "grade": { "type": "number" },
+        "grade_comment": { "type": "string" }
+      }
+    },
+    "essay.delete": {
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" }
+      }
+    },
+    "essay.unsubmit": {
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" }
+      }
+    }
+  },
+  "events": {
+    "fields.change.instructions": { "type": "string" },
+    "fields.change.criteria": { "type": "string" },
+    "essay.saved": { "type": "boolean" },
+    "essay.submitted": { "type": "boolean" },
+    "essay.graded": {
+      "type": "object",
+      "properties": {
+        "grade": { "type": "number" },
+        "grade_comment": { "type": "string" }
+      }
+    },
+    "submissions.changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "value": {
+            "type": "object",
+            "properties": {
+              "user_id": { "type": "string" },
+              "text": { "type": "string" },
+              "status": { "type": "string" },
+              "grade": { "type": "number" },
+              "grade_comment": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
