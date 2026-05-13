@@ -43,17 +43,34 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
                 )}
               </div>
               {!readOnly && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>⋯</DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => onTogglePermission?.(a.id, a.permission)}>
-                      {a.permission === "play" ? "Edit" : "Play"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShareActivity({ id: a.id, permission: a.permission })}>Share with AI agent</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDelete?.(a.id)} className="text-destructive">Delete</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-md border overflow-hidden">
+                    <Button
+                      size="sm"
+                      variant={a.permission === "play" ? "default" : "ghost"}
+                      className="rounded-none"
+                      onClick={() => { if (a.permission !== "play") onTogglePermission?.(a.id, a.permission); }}
+                    >
+                      Play
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={a.permission === "edit" ? "default" : "ghost"}
+                      className="rounded-none"
+                      onClick={() => { if (a.permission !== "edit") onTogglePermission?.(a.id, a.permission); }}
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>⋯</DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setShareActivity({ id: a.id, permission: a.permission })}>Share with AI agent</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onDelete?.(a.id)} className="text-destructive">Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
             </div>
             <PxcActivity context={a.context} state={a.state} permission={a.permission} />
