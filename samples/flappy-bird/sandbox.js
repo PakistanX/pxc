@@ -17,10 +17,13 @@ export function onAction(name, data, context, permission) {
   const userId = context.userId || "anonymous";
 
   if (name === "game.position") {
+    const names = Object.fromEntries(getUsernames([userId]));
     const payload = {
       user: userId,
+      username: names[userId] || userId,
       x: Number(value.x) || 0,
       y: Number(value.y) || 0,
+      scrollX: Number(value.scrollX) || 0,
       alive: Boolean(value.alive),
     };
     sendEvent("player.position", JSON.stringify(payload), null, "play");

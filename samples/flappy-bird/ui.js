@@ -176,7 +176,7 @@ export function setup(activity) {
     game.state = "dead";
     activity.sendAction("game.over", { score: game.score });
     try {
-      activity.sendAction("game.position", { x: BIRD_X, y: game.bird.y, alive: false });
+      activity.sendAction("game.position", { x: BIRD_X, y: game.bird.y, scrollX: game.scrollX, alive: false });
     } catch (_) {}
   }
 
@@ -196,16 +196,17 @@ export function setup(activity) {
         ghosts.delete(user);
         continue;
       }
+      const gx = g.x + (g.scrollX - game.scrollX);
       ctx.globalAlpha = g.alive ? 0.45 : 0.2;
       ctx.fillStyle = "#ffcc33";
       ctx.beginPath();
-      ctx.arc(g.x, g.y, BIRD_R, 0, Math.PI * 2);
+      ctx.arc(gx, g.y, BIRD_R, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.fillStyle = "rgba(0,0,0,0.7)";
       ctx.font = "11px system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(user, g.x, g.y - BIRD_R - 4);
+      ctx.fillText(g.username, gx, g.y - BIRD_R - 4);
     }
 
     ctx.fillStyle = "#ffeb3b";
@@ -261,6 +262,7 @@ export function setup(activity) {
       activity.sendAction("game.position", {
         x: BIRD_X,
         y: game.bird.y,
+        scrollX: game.scrollX,
         alive: true,
       });
     }
@@ -292,7 +294,9 @@ export function setup(activity) {
       ghosts.set(value.user, {
         x: value.x,
         y: value.y,
+        scrollX: value.scrollX || 0,
         alive: value.alive,
+        username: value.username || value.user,
         lastSeen: performance.now(),
       });
     } else if (name === "fields.change.best_score") {
