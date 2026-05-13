@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { getCourses, getCourse, reorderPages, type CourseItem, type PageItem } from "@/lib/api";
+import { getCourses, getSharedCourses, getCourse, reorderPages, type CourseItem, type PageItem } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 function SortablePage({ page, isActive }: { page: PageItem; isActive: boolean }) {
@@ -45,11 +45,14 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [sharedCourses, setSharedCourses] = useState<CourseItem[]>([]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [pages, setPages] = useState<PageItem[]>([]);
 
   const refresh = useCallback(async () => {
-    setCourses(await getCourses());
+    const [own, shared] = await Promise.all([getCourses(), getSharedCourses()]);
+    setCourses(own);
+    setSharedCourses(shared);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -136,6 +139,46 @@ export function AppSidebar() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+        {sharedCourses.length > 0 && (
+          <>
+            <div className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Shared courses
+            </div>
+            <SidebarMenu>
+              {sharedCourses.map((course) => (
+                <SidebarMenuItem key={course.id}>
+                  <SidebarMenuButton
+                    isActive={activeCourseId === course.id && !pathname.includes("/pages/")}
+                    render={<Link href={`/courses/${course.id}`} />}
+                  >
+                    <span className="flex flex-col">
+                      <span>{course.title}</span>
+                      {course.owner_name && (
+                        <span className="text-[10px] text-muted-foreground">
+                          by {course.owner_name}
+                        </span>
+                      )}
+                    </span>
+                  </SidebarMenuButton>
+                  {activeCourseId === course.id && pages.length > 0 && (
+                    <SidebarMenuSub>
+                      {pages.map((page) => (
+                        <SidebarMenuSubItem key={page.id}>
+                          <SidebarMenuSubButton
+                            isActive={pathname === `/pages/${page.id}`}
+                            render={<Link href={`/pages/${page.id}`} />}
+                          >
+                            {page.title}
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <div className="flex items-center justify-between gap-2 px-2 py-1 text-xs">

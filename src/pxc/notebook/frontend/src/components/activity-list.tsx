@@ -12,12 +12,13 @@ import { getApiToken, type Activity } from "@/lib/api";
 
 type ActivityListProps = {
   activities: Activity[];
-  onMove: (id: string, direction: string) => void;
-  onDelete: (id: string) => void;
-  onTogglePermission: (id: string, current: string) => void;
+  onMove?: (id: string, direction: string) => void;
+  onDelete?: (id: string) => void;
+  onTogglePermission?: (id: string, current: string) => void;
+  readOnly?: boolean;
 };
 
-export function ActivityList({ activities, onMove, onDelete, onTogglePermission }: ActivityListProps) {
+export function ActivityList({ activities, onMove, onDelete, onTogglePermission, readOnly = false }: ActivityListProps) {
   const [shareActivity, setShareActivity] = useState<{ id: string; permission: string } | null>(null);
   const [ltiActivity, setLtiActivity] = useState<{ id: string } | null>(null);
   const [apiToken, setApiToken] = useState<string | null>(null);
@@ -34,20 +35,26 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission 
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{a.activity_type}</Badge>
-                <Button variant="ghost" size="sm" onClick={() => onMove(a.id, "up")}>&#9650;</Button>
-                <Button variant="ghost" size="sm" onClick={() => onMove(a.id, "down")}>&#9660;</Button>
+                {!readOnly && (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => onMove?.(a.id, "up")}>&#9650;</Button>
+                    <Button variant="ghost" size="sm" onClick={() => onMove?.(a.id, "down")}>&#9660;</Button>
+                  </>
+                )}
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>⋯</DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => onTogglePermission(a.id, a.permission)}>
-                    {a.permission === "play" ? "Edit" : "Play"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShareActivity({ id: a.id, permission: a.permission })}>Share with AI agent</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(a.id)} className="text-destructive">Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {!readOnly && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>⋯</DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => onTogglePermission?.(a.id, a.permission)}>
+                      {a.permission === "play" ? "Edit" : "Play"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShareActivity({ id: a.id, permission: a.permission })}>Share with AI agent</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete?.(a.id)} className="text-destructive">Delete</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             <PxcActivity context={a.context} state={a.state} permission={a.permission} />
           </CardContent>

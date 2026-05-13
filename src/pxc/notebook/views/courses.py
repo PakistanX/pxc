@@ -26,6 +26,7 @@ class ReorderPagesBody(BaseModel):
 
 
 def get_course_or_404(session: Session, course_id: str, user: User) -> Course:
+    """Owner-only lookup — used by mutation endpoints."""
     course = session.get(Course, course_id)
     if not course or course.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -33,8 +34,25 @@ def get_course_or_404(session: Session, course_id: str, user: User) -> Course:
 
 
 def get_page_or_404(session: Session, page_id: str, user: User) -> Page:
+    """Owner-only lookup — used by mutation endpoints."""
     page = session.get(Page, page_id)
     if not page or page.course.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Page not found")
+    return page
+
+
+def get_visible_course_or_404(session: Session, course_id: str) -> Course:
+    """Any authenticated user can view any course."""
+    course = session.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+
+def get_visible_page_or_404(session: Session, page_id: str) -> Page:
+    """Any authenticated user can view any page."""
+    page = session.get(Page, page_id)
+    if not page:
         raise HTTPException(status_code=404, detail="Page not found")
     return page
 
@@ -42,7 +60,7 @@ def get_page_or_404(session: Session, page_id: str, user: User) -> Page:
 # ---- course API ----
 
 
-@router.get("/api/courses", summary="List all courses")
+@router.get("/api/courses", summary="List the current user's courses")
 async def list_courses(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -55,6 +73,32 @@ async def list_courses(
     ).all()
     return JSONResponse(
         [{"id": c.id, "title": c.title, "position": c.position} for c in courses]
+    )
+
+
+@router.get("/api/shared-courses", summary="List courses owned by other users")
+async def list_shared_courses(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """Return all courses owned by other users, grouped by owner."""
+    rows = session.exec(
+        select(Course, User)
+        .join(User, col(Course.owner_id) == col(User.id))
+        .where(Course.owner_id != current_user.id)
+        .order_by(col(User.email), col(Course.position))
+    ).all()
+    return JSONResponse(
+        [
+            {
+                "id": c.id,
+                "title": c.title,
+                "position": c.position,
+                "owner_id": c.owner_id,
+                "owner_name": u.email.split("@", 1)[0],
+            }
+            for c, u in rows
+        ]
     )
 
 
@@ -150,14 +194,19 @@ async def get_course(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Return course details including the ordered list of pages."""
-    course = get_course_or_404(session, course_id, current_user)
+    course = get_visible_course_or_404(session, course_id)
     pages = session.exec(
         select(Page).where(Page.course_id == course_id).order_by(col(Page.position))
     ).all()
+    is_owner = course.owner_id == current_user.id
+    owner_name = course.owner.email.split("@", 1)[0] if not is_owner else None
     return JSONResponse(
         {
             "id": course.id,
             "title": course.title,
+            "owner_id": course.owner_id,
+            "owner_name": owner_name,
+            "is_owner": is_owner,
             "pages": [
                 {"id": p.id, "title": p.title, "position": p.position} for p in pages
             ],

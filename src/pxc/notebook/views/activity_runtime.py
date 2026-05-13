@@ -43,23 +43,37 @@ class ActivityInfo(NamedTuple):
     activity_type: str
     course_id: str
     is_course_activity: bool
+    is_owner: bool
 
 
 def resolve_activity(session: Session, activity_id: str, user: User) -> ActivityInfo:
-    """Look up an activity in both PageActivity and CourseActivity tables and
-    ensure the authenticated user owns the parent course."""
+    """Look up an activity in both PageActivity and CourseActivity tables.
+
+    Any authenticated user can resolve any activity; non-owners are restricted
+    to play permission by `effective_permission()`.
+    """
     pa = session.get(PageActivity, activity_id)
     if pa:
         course = pa.page.course
-        if course.owner_id != user.id:
-            raise HTTPException(status_code=403, detail="Forbidden")
-        return ActivityInfo(pa.id, pa.activity_type, course.id, False)
+        return ActivityInfo(
+            pa.id, pa.activity_type, course.id, False, course.owner_id == user.id
+        )
     ca = session.get(CourseActivity, activity_id)
     if ca:
-        if ca.course.owner_id != user.id:
-            raise HTTPException(status_code=403, detail="Forbidden")
-        return ActivityInfo(ca.id, ca.activity_type, ca.course_id, True)
+        return ActivityInfo(
+            ca.id,
+            ca.activity_type,
+            ca.course_id,
+            True,
+            ca.course.owner_id == user.id,
+        )
     raise HTTPException(status_code=404, detail="Activity not found")
+
+
+def check_permission(info: ActivityInfo, permission: Permission) -> None:
+    """Non-owners may only request play permission."""
+    if not info.is_owner and permission != Permission.play:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 
 def load_any_activity(
@@ -158,6 +172,7 @@ async def activity_actions(
 ) -> None:
     """Trigger an activity action."""
     info = resolve_activity(session, activity_id, current_user)
+    check_permission(info, permission)
 
     ctx = load_any_activity(info, current_user.id, permission)
     try:
@@ -186,6 +201,7 @@ async def activity_ws(
 
     try:
         info = resolve_activity(session, activity_id, current_user)
+        check_permission(info, permission)
     except HTTPException:
         await websocket.close(code=policy_violation_code)
         return

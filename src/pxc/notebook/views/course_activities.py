@@ -32,8 +32,17 @@ class MoveCourseActivityBody(BaseModel):
 
 
 def get_course_or_404(session: Session, course_id: str, user: User) -> Course:
+    """Owner-only lookup — used by mutation endpoints."""
     course = session.get(Course, course_id)
     if not course or course.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+
+def get_visible_course_or_404(session: Session, course_id: str) -> Course:
+    """Read-only lookup accessible to any authenticated user."""
+    course = session.get(Course, course_id)
+    if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
 
@@ -97,8 +106,19 @@ def load_course_activity(
 def get_course_activity_or_404(
     session: Session, activity_id: str, user: User
 ) -> tuple[CourseActivity, Course]:
+    """Owner-only lookup — used by mutation endpoints."""
     ca = session.get(CourseActivity, activity_id)
     if not ca or ca.course.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Course activity not found")
+    return ca, ca.course
+
+
+def get_visible_course_activity_or_404(
+    session: Session, activity_id: str
+) -> tuple[CourseActivity, Course]:
+    """Read-only lookup accessible to any authenticated user."""
+    ca = session.get(CourseActivity, activity_id)
+    if not ca:
         raise HTTPException(status_code=404, detail="Course activity not found")
     return ca, ca.course
 
@@ -250,19 +270,25 @@ async def get_course_dashboard(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Return course details, dashboard activities, and available types."""
-    course = get_course_or_404(session, course_id, current_user)
+    course = get_visible_course_or_404(session, course_id)
+    is_owner = course.owner_id == current_user.id
     cas = session.exec(
         select(CourseActivity)
         .where(CourseActivity.course_id == course_id)
         .order_by(col(CourseActivity.position))
     ).all()
-    activities = [course_activity_dict(ca, current_user.id) for ca in cas]
+    activities = [
+        course_activity_dict(ca, current_user.id, Permission.play) for ca in cas
+    ]
     return JSONResponse(
         {
             "id": course.id,
             "title": course.title,
+            "is_owner": is_owner,
             "activities": activities,
-            "activity_types": list_course_activity_types(current_user.id),
+            "activity_types": (
+                list_course_activity_types(current_user.id) if is_owner else []
+            ),
         }
     )
 
@@ -308,7 +334,9 @@ async def get_course_activity(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Return course activity state and metadata."""
-    ca, _course = get_course_activity_or_404(session, activity_id, current_user)
+    ca, course = get_visible_course_activity_or_404(session, activity_id)
+    if course.owner_id != current_user.id and permission != Permission.play:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return JSONResponse(course_activity_dict(ca, current_user.id, permission))
 
 

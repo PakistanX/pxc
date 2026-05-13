@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { getPage, getActivity, createActivity, updatePage, deletePage, deleteActivity, moveActivity, type PageDetail, type Activity } from "@/lib/api";
+import { getPage, getActivity, createActivity, updatePage, deletePage, deleteActivity, moveActivity, type PageDetail } from "@/lib/api";
 import { ActivityList } from "@/components/activity-list";
 import { AddForm } from "@/components/add-form";
 import { ItemActions } from "@/components/item-actions";
@@ -55,22 +55,29 @@ export function PageDetailPage({ pageId }: { pageId: string }) {
     });
   }
 
+  const isOwner = page.is_owner;
+
   return (
     <section>
-      <ItemActions
-        title={page.title}
-        onRename={handleRename}
-        onDelete={handleDelete}
-        renderTitle={(title) => <h1 className="text-2xl font-bold">{title}</h1>}
-      />
+      {isOwner ? (
+        <ItemActions
+          title={page.title}
+          onRename={handleRename}
+          onDelete={handleDelete}
+          renderTitle={(title) => <h1 className="text-2xl font-bold">{title}</h1>}
+        />
+      ) : (
+        <h1 className="text-2xl font-bold">{page.title}</h1>
+      )}
       <div className="mt-4">
         <ActivityList
           activities={page.activities}
-          onMove={handleMove}
-          onDelete={handleDeleteActivity}
-          onTogglePermission={handleTogglePermission}
+          onMove={isOwner ? handleMove : undefined}
+          onDelete={isOwner ? handleDeleteActivity : undefined}
+          onTogglePermission={isOwner ? handleTogglePermission : undefined}
+          readOnly={!isOwner}
         />
-        <AddForm onAdd={handleAddActivity} options={page.activity_types} />
+        {isOwner && <AddForm onAdd={handleAddActivity} options={page.activity_types} />}
       </div>
     </section>
   );

@@ -78,22 +78,47 @@ def load_activity(
     )
 
 
-def get_page_and_course_or_404(
+def get_owned_page_and_course_or_404(
     session: Session, page_id: str, user: User
 ) -> tuple[Page, Course]:
+    """Owner-only lookup for mutation endpoints."""
     page = session.get(Page, page_id)
     if not page or page.course.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Page not found")
     return page, page.course
 
 
-def get_activity_or_404(
+def get_visible_page_and_course_or_404(
+    session: Session, page_id: str
+) -> tuple[Page, Course]:
+    """Read-only lookup accessible to any authenticated user."""
+    page = session.get(Page, page_id)
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found")
+    return page, page.course
+
+
+def get_owned_activity_or_404(
     session: Session, activity_id: str, user: User
 ) -> tuple[PageActivity, Page, Course]:
+    """Owner-only lookup for mutation endpoints."""
     page_activity = session.get(PageActivity, activity_id)
     if not page_activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    page, course = get_page_and_course_or_404(session, page_activity.page_id, user)
+    page, course = get_owned_page_and_course_or_404(
+        session, page_activity.page_id, user
+    )
+    return page_activity, page, course
+
+
+def get_visible_activity_or_404(
+    session: Session, activity_id: str
+) -> tuple[PageActivity, Page, Course]:
+    """Read-only lookup accessible to any authenticated user."""
+    page_activity = session.get(PageActivity, activity_id)
+    if not page_activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    page, course = get_visible_page_and_course_or_404(session, page_activity.page_id)
     return page_activity, page, course
 
 
@@ -130,20 +155,26 @@ async def get_page(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Return page details, its activity instances, and available activity types."""
-    page, _course = get_page_and_course_or_404(session, page_id, current_user)
+    page, course = get_visible_page_and_course_or_404(session, page_id)
+    is_owner = course.owner_id == current_user.id
     page_activities = session.exec(
         select(PageActivity)
         .where(PageActivity.page_id == page_id)
         .order_by(col(PageActivity.position))
     ).all()
-    activities = [activity_dict(pa, page, current_user.id) for pa in page_activities]
+    # Non-owners always see activities in play permission.
+    default_perm = Permission.play
+    activities = [
+        activity_dict(pa, page, current_user.id, default_perm) for pa in page_activities
+    ]
     return JSONResponse(
         {
             "id": page.id,
             "title": page.title,
             "course_id": page.course_id,
+            "is_owner": is_owner,
             "activities": activities,
-            "activity_types": list_activity_types(current_user.id),
+            "activity_types": list_activity_types(current_user.id) if is_owner else [],
         }
     )
 
@@ -160,7 +191,7 @@ async def create_activity(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Create a new activity instance of the given type on the page."""
-    page, _course = get_page_and_course_or_404(session, page_id, current_user)
+    page, _course = get_owned_page_and_course_or_404(session, page_id, current_user)
     find_activity_dir(body.activity_type)
     max_pos = session.exec(
         select(PageActivity.position)
@@ -189,7 +220,9 @@ async def get_activity(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Return activity state and metadata for the given permission level."""
-    pa, page, _course = get_activity_or_404(session, activity_id, current_user)
+    pa, page, course = get_visible_activity_or_404(session, activity_id)
+    if course.owner_id != current_user.id and permission != Permission.play:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return JSONResponse(activity_dict(pa, page, current_user.id, permission))
 
 
@@ -204,7 +237,7 @@ async def delete_activity(
     current_user: User = Depends(get_current_user),
 ) -> None:
     """Remove an activity instance from its page."""
-    pa, _page, course = get_activity_or_404(session, activity_id, current_user)
+    pa, _page, course = get_owned_activity_or_404(session, activity_id, current_user)
     ctx = load_activity(
         pa.activity_type, pa.id, course.id, current_user.id, Permission.edit
     )
@@ -224,7 +257,9 @@ async def activity_llms_txt(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> PlainTextResponse:
-    activity, page, _course = get_activity_or_404(session, activity_id, current_user)
+    activity, page, _course = get_owned_activity_or_404(
+        session, activity_id, current_user
+    )
 
     runtime = load_activity(
         activity.activity_type,
@@ -270,8 +305,10 @@ async def move_activity(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Swap the activity with its neighbor in the given direction."""
-    get_activity_or_404(session, activity_id, current_user)
-    page, _course = get_page_and_course_or_404(session, body.page_id, current_user)
+    get_owned_activity_or_404(session, activity_id, current_user)
+    page, _course = get_owned_page_and_course_or_404(
+        session, body.page_id, current_user
+    )
 
     items = list(
         session.exec(

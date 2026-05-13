@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getCourse, createPage, updateCourse, deleteCourse, reorderPages, type CourseDetail } from "@/lib/api";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageList } from "@/components/page-list";
 import { AddForm } from "@/components/add-form";
 import { ItemActions } from "@/components/item-actions";
@@ -38,6 +40,28 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     setCourse((prev) => prev ? { ...prev, pages: ids.map((id) => prev.pages.find((p) => p.id === id)!) } : prev);
     await reorderPages(ids);
     window.dispatchEvent(new Event("sidebar-refresh"));
+  }
+
+  if (!course.is_owner) {
+    return (
+      <section>
+        <h1 className="text-2xl font-bold">{course.title}</h1>
+        {course.owner_name && (
+          <p className="text-sm text-muted-foreground">Shared by {course.owner_name}</p>
+        )}
+        <div className="mt-4">
+          {course.pages.map((page) => (
+            <Card key={page.id} className="mb-2">
+              <CardContent className="p-3">
+                <Link href={`/pages/${page.id}`} className="hover:underline">
+                  {page.title}
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (

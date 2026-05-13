@@ -41,10 +41,11 @@ export const getApiToken = () => request<ApiTokenResponse>("/api/settings/api-to
 export const regenerateApiToken = () => request<ApiTokenResponse>("/api/settings/api-token", { method: "POST" });
 
 // Courses
-export type CourseItem = { id: string; title: string; position: number };
-export type CourseDetail = CourseItem & { pages: PageItem[] };
+export type CourseItem = { id: string; title: string; position: number; owner_id?: string; owner_name?: string };
+export type CourseDetail = CourseItem & { pages: PageItem[]; is_owner: boolean; owner_id: string; owner_name: string | null };
 
 export const getCourses = () => request<CourseItem[]>("/api/courses");
+export const getSharedCourses = () => request<CourseItem[]>("/api/shared-courses");
 export const createCourse = (title: string) => request<CourseItem>("/api/courses", json({ title }));
 export const getCourse = (id: string) => request<CourseDetail>(`/api/courses/${id}`);
 export const updateCourse = (id: string, title: string) => request<CourseItem>(`/api/courses/${id}`, jsonMethod("PATCH", { title }));
@@ -54,7 +55,7 @@ export const reorderCourses = (course_ids: string[]) => request<void>("/api/cour
 // Pages
 export type PageItem = { id: string; title: string; position: number };
 export type Activity = { id: string; page_id: string; activity_type: string; position: number; client_path: string; state: unknown; permission: string; context: { user_id: string; course_id: string; activity_id: string } };
-export type PageDetail = { id: string; title: string; course_id: string; activities: Activity[]; activity_types: string[] };
+export type PageDetail = { id: string; title: string; course_id: string; is_owner: boolean; activities: Activity[]; activity_types: string[] };
 
 export const createPage = (courseId: string, title: string) => request<PageItem>(`/api/courses/${courseId}/pages`, json({ title }));
 export const getPage = (id: string) => request<PageDetail>(`/api/pages/${id}`);
@@ -79,7 +80,7 @@ export const uploadActivityType = (name: string, file: File) => {
 };
 
 // Course dashboard
-export type CourseDashboard = { id: string; title: string; activities: Activity[]; activity_types: string[] };
+export type CourseDashboard = { id: string; title: string; is_owner: boolean; activities: Activity[]; activity_types: string[] };
 export const getCourseDashboard = (courseId: string) => request<CourseDashboard>(`/api/courses/${courseId}/dashboard`);
 export const createCourseActivity = (courseId: string, activity_type: string) => request<Activity>(`/api/courses/${courseId}/dashboard/activities`, json({ activity_type }));
 export const getCourseActivity = (id: string, permission: string) => request<Activity>(`/api/course-activities/${id}/${permission}`);

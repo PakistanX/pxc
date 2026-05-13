@@ -66,6 +66,7 @@ export function CourseDashboardPage({ courseId }: { courseId: string }) {
 
   // User-uploaded types (those starting with @)
   const uploadedTypes = dashboard.activity_types.filter((t) => t.startsWith("@"));
+  const isOwner = dashboard.is_owner;
 
   return (
     <section>
@@ -76,12 +77,15 @@ export function CourseDashboardPage({ courseId }: { courseId: string }) {
       <div className="mt-4">
         <ActivityList
           activities={dashboard.activities}
-          onMove={handleMove}
-          onDelete={handleDeleteActivity}
-          onTogglePermission={handleTogglePermission}
+          onMove={isOwner ? handleMove : undefined}
+          onDelete={isOwner ? handleDeleteActivity : undefined}
+          onTogglePermission={isOwner ? handleTogglePermission : undefined}
+          readOnly={!isOwner}
         />
-        <AddForm onAdd={handleAddActivity} options={dashboard.activity_types} />
+        {isOwner && <AddForm onAdd={handleAddActivity} options={dashboard.activity_types} />}
       </div>
+
+      {!isOwner ? null : <>
 
       <hr className="my-8" />
 
@@ -123,6 +127,7 @@ export function CourseDashboardPage({ courseId }: { courseId: string }) {
           ))}
         </ul>
       )}
+      </>}
     </section>
   );
 }
