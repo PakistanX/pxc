@@ -145,6 +145,27 @@ def activity_dict(
     }
 
 
+def activity_dict_or_error(
+    pa: PageActivity,
+    page: Page,
+    user_id: str,
+    permission: Permission = Permission.play,
+) -> dict[str, object]:
+    """Like activity_dict, but degrades to an error entry if the activity files are missing."""
+    try:
+        return activity_dict(pa, page, user_id, permission)
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        return {
+            "id": pa.id,
+            "page_id": page.id,
+            "activity_type": pa.activity_type,
+            "position": pa.position,
+            "error": "Activity files not found",
+        }
+
+
 # ---- page detail + activity API ----
 
 
@@ -165,7 +186,8 @@ async def get_page(
     # Non-owners always see activities in play permission.
     default_perm = Permission.play
     activities = [
-        activity_dict(pa, page, current_user.id, default_perm) for pa in page_activities
+        activity_dict_or_error(pa, page, current_user.id, default_perm)
+        for pa in page_activities
     ]
     return JSONResponse(
         {
@@ -238,10 +260,16 @@ async def delete_activity(
 ) -> None:
     """Remove an activity instance from its page."""
     pa, _page, course = get_owned_activity_or_404(session, activity_id, current_user)
-    ctx = load_activity(
-        pa.activity_type, pa.id, course.id, current_user.id, Permission.edit
-    )
-    ctx.delete_storage()
+    try:
+        ctx = load_activity(
+            pa.activity_type, pa.id, course.id, current_user.id, Permission.edit
+        )
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        # Activity files are gone; nothing to clean up beyond the DB row.
+    else:
+        ctx.delete_storage()
     session.delete(pa)
     session.commit()
 

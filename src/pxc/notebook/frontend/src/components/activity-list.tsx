@@ -30,7 +30,7 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
   return (
     <div>
       {activities.map((a) => (
-        <Card key={`${a.id}-${a.permission}`} className="mb-4">
+        <Card key={`${a.id}-${a.permission ?? "broken"}`} className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -44,36 +44,46 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
               </div>
               {!readOnly && (
                 <div className="flex items-center gap-2">
-                  <div className="inline-flex rounded-md border overflow-hidden">
-                    <Button
-                      size="sm"
-                      variant={a.permission === "play" ? "default" : "ghost"}
-                      className="rounded-none"
-                      onClick={() => { if (a.permission !== "play") onTogglePermission?.(a.id, a.permission); }}
-                    >
-                      Play
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={a.permission === "edit" ? "default" : "ghost"}
-                      className="rounded-none"
-                      onClick={() => { if (a.permission !== "edit") onTogglePermission?.(a.id, a.permission); }}
-                    >
-                      Edit
-                    </Button>
-                  </div>
+                  {!a.error && a.permission && (
+                    <div className="inline-flex rounded-md border overflow-hidden">
+                      <Button
+                        size="sm"
+                        variant={a.permission === "play" ? "default" : "ghost"}
+                        className="rounded-none"
+                        onClick={() => { if (a.permission !== "play") onTogglePermission?.(a.id, a.permission!); }}
+                      >
+                        Play
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={a.permission === "edit" ? "default" : "ghost"}
+                        className="rounded-none"
+                        onClick={() => { if (a.permission !== "edit") onTogglePermission?.(a.id, a.permission!); }}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>⋯</DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setShareActivity({ id: a.id, permission: a.permission })}>Share with AI agent</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
+                      {!a.error && a.permission && (
+                        <DropdownMenuItem onClick={() => setShareActivity({ id: a.id, permission: a.permission! })}>Share with AI agent</DropdownMenuItem>
+                      )}
+                      {!a.error && (
+                        <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onDelete?.(a.id)} className="text-destructive">Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               )}
             </div>
-            <PxcActivity context={a.context} state={a.state} permission={a.permission} />
+            {a.error ? (
+              <div className="text-sm text-destructive">{a.error}</div>
+            ) : (
+              <PxcActivity context={a.context!} state={a.state} permission={a.permission!} />
+            )}
           </CardContent>
         </Card>
       ))}
