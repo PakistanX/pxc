@@ -1,0 +1,19 @@
+{
+  "name": "harmony",
+  "ui": "ui.bundle.js",
+  "sandbox": "sandbox.wasm",
+  "fields": {
+    "scale": { "type": "string", "scope": "activity", "default": "major" }
+  },
+  "actions": {
+    "config.save": {
+      "type": "object",
+      "properties": {
+        "scale": { "type": "string" }
+      }
+    }
+  },
+  "events": {
+    "fields.change.scale": { "type": "string" }
+  }
+}
