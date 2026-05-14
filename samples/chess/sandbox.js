@@ -221,7 +221,7 @@ export function getState(context, permission) {
   const black = JSON.parse(getField("black"));
   const records = JSON.parse(logGetRange("records", 0, 1000));
   const ids = [white, black, ...collectRecordIds(records)];
-  return JSON.stringify({
+  const state = {
     fen: JSON.parse(getField("fen")),
     white,
     black,
@@ -229,5 +229,9 @@ export function getState(context, permission) {
     result: JSON.parse(getField("result")),
     records,
     usernames: namesToList(resolveNames(ids)),
-  });
+  };
+  if (permission === "edit") {
+    state.discord_webhook_url = JSON.parse(getField("discord_webhook_url"));
+  }
+  return JSON.stringify(state);
 }
