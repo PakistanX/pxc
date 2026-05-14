@@ -4,7 +4,7 @@
 // - scorm.upload: Receive a base64-encoded zip, decompress, store all files
 
 import { getField, sendEvent, setField } from "pxc:sandbox/state";
-import { storageDelete, storageList, storageUrl, storageWrite } from "pxc:sandbox/storage";
+import { storageDelete, storageExists, storageList, storageUrl, storageWrite } from "pxc:sandbox/storage";
 import { unzipSync } from "fflate";
 
 function base64ToBytes(base64) {
@@ -18,6 +18,9 @@ function base64ToBytes(base64) {
 
 /** Delete all files currently in the "content" storage namespace. */
 function clearStorage(prefix) {
+  if(!storageExists("content", prefix)) {
+    return;
+  }
   const [dirs, files] = storageList("content", prefix, null);
   for (const file of files) {
     const path = prefix ? prefix + "/" + file : file;
