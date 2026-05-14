@@ -16,15 +16,21 @@ __test_functions = [
     (__name, __func) for (__name, __func) in globals().items()
     if __name.startswith("test_") and callable(__func)
 ]
+__failed = False
 for __name, __func in __test_functions:
     __doc = (__func.__doc__ or __name).strip()
+    if __failed:
+        __results.append({"name": __name, "description": __doc, "status": "skipped"})
+        continue
     try:
         __func()
-        __results.append({"name": __name, "description": __doc, "passed": True})
+        __results.append({"name": __name, "description": __doc, "status": "passed"})
     except AssertionError as __e:
-        __results.append({"name": __name, "description": __doc, "passed": False, "error": str(__e) or "Assertion failed"})
+        __results.append({"name": __name, "description": __doc, "status": "failed", "error": str(__e) or "Assertion failed"})
+        __failed = True
     except Exception as __e:
-        __results.append({"name": __name, "description": __doc, "passed": False, "error": f"{type(__e).__name__}: {__e}"})
+        __results.append({"name": __name, "description": __doc, "status": "failed", "error": f"{type(__e).__name__}: {__e}"})
+        __failed = True
 print(__json.dumps(__results))
 \`;
 
@@ -105,18 +111,19 @@ export function setup(activity) {
       const w = getWorker();
       let settled = false;
 
-      const timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          killWorker();
-          reject(new Error("Execution timed out (5s limit)"));
-        }
-      }, TIMEOUT_MS);
+      let timer = null;
 
       function onMessage(e) {
         if (e.data.id !== id) return;
         if (e.data.kind === "loaded") {
           if (onLoaded) onLoaded();
+          timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              killWorker();
+              reject(new Error("Execution timed out (5s limit)"));
+            }
+          }, TIMEOUT_MS);
           return;
         }
         settled = true;
@@ -239,10 +246,16 @@ export function setup(activity) {
         .py-output { margin-top: 1rem; }
         .py-output pre { background: #1e1e1e; color: #d4d4d4; padding: 0.75rem; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; min-height: 1.5em; }
         .py-results { margin-top: 1rem; }
-        .py-result-item { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.25rem 0; }
+        .py-summary { padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; font-weight: bold; }
+        .py-summary.success { background: #d4edda; color: #155724; }
+        .py-summary.failure { background: #f8d7da; color: #721c24; }
+        .py-result-item { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 3px; }
+        .py-result-item.failed { background: #f8d7da; }
+        .py-result-item.skipped { color: #999; }
         .py-pass { color: #155724; }
         .py-fail { color: #721c24; }
-        .py-error-detail { font-size: 0.85em; color: #666; margin-left: 1.5rem; }
+        .py-skip { color: #999; }
+        .py-error-detail { font-size: 0.85em; color: #666; margin-left: 1.5rem; padding-bottom: 0.25rem; }
         .no-content { color: #666; font-style: italic; }
         .py-status { margin-top: 1rem; color: #666; font-style: italic; display: none; }
         .py-output, .py-results { display: none; }
@@ -342,17 +355,26 @@ export function setup(activity) {
         return;
       }
 
-      resultsContent.innerHTML = results
+      const total = results.length;
+      const passed = results.filter((r) => r.status === "passed").length;
+      const allPassed = passed === total && total > 0;
+      const summary = allPassed
+        ? `<div class="py-summary success">&#10003; All checks passed (${passed}/${total})</div>`
+        : `<div class="py-summary failure">&#10007; Check failed (${passed} of ${total} passed)</div>`;
+
+      const items = results
         .map((r) => {
-          const icon = r.passed ? "&#10003;" : "&#10007;";
-          const cls = r.passed ? "py-pass" : "py-fail";
-          let html = `<div class="py-result-item"><span class="${cls}">${icon}</span> <span>${escapeHtml(r.description)}</span></div>`;
-          if (!r.passed && r.error) {
+          const icon = r.status === "passed" ? "&#10003;" : r.status === "failed" ? "&#10007;" : "&ndash;";
+          const iconCls = r.status === "passed" ? "py-pass" : r.status === "failed" ? "py-fail" : "py-skip";
+          let html = `<div class="py-result-item ${r.status}"><span class="${iconCls}">${icon}</span> <span>${escapeHtml(r.description)}</span></div>`;
+          if (r.status === "failed" && r.error) {
             html += `<div class="py-error-detail">${escapeHtml(r.error)}</div>`;
           }
           return html;
         })
         .join("");
+
+      resultsContent.innerHTML = summary + items;
     });
   }
 
