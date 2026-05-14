@@ -45,17 +45,15 @@ export function setup(activity) {
   }
 
   function appendMessage(container, msg) {
-    const div = document.createElement("div");
-    div.className = "chat-msg";
-    div.innerHTML = `<strong>${escapeHtml(msg.username || msg.user)}:</strong> ${escapeHtml(msg.text)}`;
-    container.appendChild(div);
+    container.insertAdjacentHTML("beforeend",
+      `<div class="chat-msg"><strong>${escapeHtml(msg.username || msg.user)}:</strong> ${escapeHtml(msg.text)}</div>`);
     container.scrollTop = container.scrollHeight;
   }
 
   function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   activity.onEvent = (name, value) => {

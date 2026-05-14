@@ -30,6 +30,9 @@ const SCALE_SEMITONES = {
   blues:            [0,3,5,6,7,10,12],
 };
 
+const escapeHtml = (s) =>
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
 function noteFreq(semitones) {
   return C4_FREQ * Math.pow(2, semitones / 12);
 }
@@ -179,15 +182,12 @@ export function setup(activity) {
     const staffEl = el.querySelector("#staff");
     const xPositions = renderStaff(staffEl, scale.vexKeys, -1);
 
-    scale.displayNames.forEach((name, i) => {
-      const chip = el.ownerDocument.createElement("div");
-      chip.className = "chip";
-      chip.dataset.idx = String(i);
-      chip.innerHTML = `${i + 1}<span>${name}</span>`;
-      chip.style.left = `${xPositions[i] - 22}px`;
-      chip.style.top = "158px";
-      chip.addEventListener("click", () => trigger(i));
-      staffEl.appendChild(chip);
+    const chipsHtml = scale.displayNames.map((name, i) =>
+      `<div class="chip" data-idx="${i}" style="left: ${xPositions[i] - 22}px; top: 158px">${i + 1}<span>${escapeHtml(name)}</span></div>`
+    ).join("");
+    staffEl.insertAdjacentHTML("beforeend", chipsHtml);
+    staffEl.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => trigger(parseInt(chip.dataset.idx)));
     });
 
     let activeTimeout = null;

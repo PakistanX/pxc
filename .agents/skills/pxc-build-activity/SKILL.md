@@ -107,6 +107,25 @@ export function setup(activity) {
 - Update `activity.state.*` when receiving `fields.change.*` events
 - Use inline `<style>` tags within `activity.element` for styling
 
+**Scoping rule — never use `document.*` or `window.*`:**
+
+Multiple activities can run on the same page. Anything attached to global `document` or `window` (event listeners, focus, scroll handlers, audio context references, etc.) leaks across activities and breaks isolation.
+
+- **`activity.element` is usually a `ShadowRoot`, not an Element.** It has `addEventListener`, `querySelector`, `innerHTML`, `insertAdjacentHTML`, and `ownerDocument`, but NOT `setAttribute`, `style`, `focus`, `getBoundingClientRect`, or `classList`. To use those Element-only APIs, render a wrapper `<div>` inside `activity.element` first and target that div.
+- **Keyboard input**: do NOT do `document.addEventListener("keydown", ...)`. Instead, after rendering, take a wrapper element inside `activity.element` (e.g. `const root = activity.element.querySelector(".my-root")`), give it `tabindex="-1"` in the HTML template, attach the keydown listener to it, and call `root.focus()` (plus focus on `mousedown`) so keys only fire when this activity is focused. Call `e.preventDefault()` for keys you handle.
+- **DOM creation — avoid `document.createElement` AND `element.ownerDocument.createElement`**. `ownerDocument` *is* the parent document reached via the shadow root; it's the same global reference, so it's not a fix. A `ShadowRoot` has no `createElement` of its own. Instead:
+  - Build markup as a string and use `parent.insertAdjacentHTML("beforeend", html)` (or `element.innerHTML = ...`); then `parent.lastElementChild` or `parent.querySelector(...)` to wire listeners on the inserted nodes.
+  - For text escaping, use a pure string helper — never a throwaway `<div>`:
+    ```javascript
+    const escapeHtml = (s) =>
+      String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+               .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    ```
+  - The one unavoidable exception is `<script>` elements — `innerHTML`-injected scripts don't execute. If you must load an external script, isolate the `createElement("script")` call, comment why it's necessary, and append the script to `activity.element` (the shadow root) rather than `document.head`.
+- **Global constructors**: use bare `AudioContext`, `URL`, `FileReader`, etc. — not `window.AudioContext`. For property checks on globally-attached libraries (e.g. the YouTube IFrame API setting `window.YT`), use `globalThis.YT` rather than `window.YT`.
+- **Scope every query and listener to `activity.element`**: render into it, query within it (`activity.element.querySelector`, not `document.querySelector`), and attach listeners to it or its descendants — never to `document` or `window`.
+- **Per-instance state for shared libraries**: if a third-party library has a single-callback API (e.g. `window.onYouTubeIframeAPIReady`), do NOT register that callback — only one instance can own it. Instead, poll `globalThis.<Library>` from a per-instance ready promise (declared inside `setup(activity)`, not at module scope).
+
 # Sandbox API Reference
 
 The sandbox script exports `getState` and `onAction`, and imports host functions from per-area WIT interfaces:
@@ -371,10 +390,9 @@ export function setup(activity) {
   }
 
   function escapeHtml(str) {
-    // Only create this function if actually needed.
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    // Pure-string version — never use document.createElement / ownerDocument.createElement.
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+                      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
 
   activity.onEvent = (name, value) => {

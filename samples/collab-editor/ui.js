@@ -10,6 +10,9 @@ import { marked } from "marked";
 const UPDATE_THROTTLE_MS = 100;
 const CURSOR_THROTTLE_MS = 50;
 
+const escapeHtml = (s) =>
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
 function base64ToBytes(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -100,14 +103,12 @@ export function setup(activity) {
   if (isEdit) {
     // Edit mode: only show checkbox to configure markdown rendering, hide editor
     editorWrap.style.display = "none";
-    const label = document.createElement("label");
-    label.style.cssText = "display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer;";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = renderMd;
-    label.appendChild(checkbox);
-    label.append("Render markdown");
-    header.appendChild(label);
+    header.insertAdjacentHTML("beforeend",
+      `<label style="display:flex;align-items:center;gap:0.3rem;font-size:0.85rem;cursor:pointer;">
+         <input type="checkbox" class="collab-render-md-cb"${renderMd ? " checked" : ""}>
+         Render markdown
+       </label>`);
+    const checkbox = header.querySelector(".collab-render-md-cb");
     checkbox.addEventListener("change", () => {
       activity.sendAction("config.save", { render_markdown: checkbox.checked ? 1 : 0 });
     });
@@ -212,23 +213,13 @@ export function setup(activity) {
 
       const wrapRect = editorWrap.getBoundingClientRect();
 
-      // Cursor line
-      const line = document.createElement("div");
-      line.className = "remote-cursor-line";
-      line.style.backgroundColor = cursor.color;
-      line.style.left = (coords.left - wrapRect.left) + "px";
-      line.style.top = (coords.top - wrapRect.top) + "px";
-      line.style.height = (coords.bottom - coords.top) + "px";
-      editorWrap.appendChild(line);
-
-      // User label
-      const label = document.createElement("div");
-      label.className = "remote-cursor-label";
-      label.style.backgroundColor = cursor.color;
-      label.style.left = (coords.left - wrapRect.left) + "px";
-      label.style.top = (coords.top - wrapRect.top) + "px";
-      label.textContent = cursor.username || userId;
-      editorWrap.appendChild(label);
+      const color = escapeHtml(cursor.color);
+      const left = coords.left - wrapRect.left;
+      const top = coords.top - wrapRect.top;
+      const height = coords.bottom - coords.top;
+      editorWrap.insertAdjacentHTML("beforeend",
+        `<div class="remote-cursor-line" style="background-color:${color};left:${left}px;top:${top}px;height:${height}px;"></div>` +
+        `<div class="remote-cursor-label" style="background-color:${color};left:${left}px;top:${top}px;">${escapeHtml(cursor.username || userId)}</div>`);
     }
   }
 
@@ -236,11 +227,8 @@ export function setup(activity) {
   function renderUserDots() {
     usersContainer.innerHTML = "";
     for (const [userId, cursor] of remoteCursors.entries()) {
-      const dot = document.createElement("span");
-      dot.className = "collab-user-dot";
-      dot.style.backgroundColor = cursor.color;
-      dot.title = cursor.username || userId;
-      usersContainer.appendChild(dot);
+      usersContainer.insertAdjacentHTML("beforeend",
+        `<span class="collab-user-dot" style="background-color:${escapeHtml(cursor.color)};" title="${escapeHtml(cursor.username || userId)}"></span>`);
     }
   }
 }

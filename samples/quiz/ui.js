@@ -19,9 +19,8 @@ export function setup(activity) {
 
         let feedback = element.querySelector("#feedback");
         if (!feedback) {
-            feedback = document.createElement("p");
-            feedback.id = "feedback";
-            form.after(feedback);
+            form.insertAdjacentHTML("afterend", '<p id="feedback"></p>');
+            feedback = element.querySelector("#feedback");
         }
 
         if (answer === "4") {

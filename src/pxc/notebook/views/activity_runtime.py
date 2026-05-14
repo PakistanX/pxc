@@ -222,7 +222,6 @@ async def activity_ws(
         except WebSocketDisconnect:
             event_bus.unsubscribe(info.activity_type, subscriber)
             return
-
         try:
             action_name = data["action"]
             action_value = data["value"]

@@ -76,10 +76,8 @@ export function setup(activity) {
     element.querySelector("#iv-add-interaction").addEventListener("click", () => {
       const list = element.querySelector("#iv-interactions-list");
       const idx = list.querySelectorAll(".iv-interaction").length;
-      const div = document.createElement("div");
-      div.innerHTML = renderInteractionEditor({ time: 0, question: "", answers: ["", ""], correct_answers: [] }, idx);
-      const interactionEl = div.firstElementChild;
-      list.appendChild(interactionEl);
+      list.insertAdjacentHTML("beforeend", renderInteractionEditor({ time: 0, question: "", answers: ["", ""], correct_answers: [] }, idx));
+      const interactionEl = list.lastElementChild;
       interactionEl.querySelectorAll(".iv-remove-answer").forEach(attachAnswerRemoveHandler);
       attachInteractionRemoveHandler(interactionEl.querySelector(".iv-remove-interaction"));
       attachAddAnswerHandler(interactionEl.querySelector(".iv-add-answer"));
@@ -172,15 +170,14 @@ export function setup(activity) {
   function attachAddAnswerHandler(btn) {
     btn.addEventListener("click", () => {
       const list = btn.previousElementSibling;
-      const item = document.createElement("div");
-      item.className = "iv-answer-item";
-      item.innerHTML = `
-        <input type="checkbox" class="iv-correct-cb">
-        <input type="text" class="iv-answer-text" value="">
-        <button type="button" class="iv-remove-answer iv-btn">Remove</button>
-      `;
-      list.appendChild(item);
-      attachAnswerRemoveHandler(item.querySelector(".iv-remove-answer"));
+      list.insertAdjacentHTML("beforeend", `
+        <div class="iv-answer-item">
+          <input type="checkbox" class="iv-correct-cb">
+          <input type="text" class="iv-answer-text" value="">
+          <button type="button" class="iv-remove-answer iv-btn">Remove</button>
+        </div>
+      `);
+      attachAnswerRemoveHandler(list.lastElementChild.querySelector(".iv-remove-answer"));
     });
   }
 
@@ -243,14 +240,14 @@ export function setup(activity) {
 
     loadYouTubeAPI().then(() => {
       const playerEl = element.querySelector("#iv-yt-player");
-      player = new YT.Player(playerEl, {
+      player = new globalThis.YT.Player(playerEl, {
         videoId: config.video_id,
         playerVars: { rel: 0 },
         events: {
           onReady: () => { startPolling(config); },
           onStateChange: (event) => {
             // If playing and there's an active unanswered interaction, pause
-            if (event.data === YT.PlayerState.PLAYING && activeOverlayIndex >= 0) {
+            if (event.data === globalThis.YT.PlayerState.PLAYING && activeOverlayIndex >= 0) {
               player.pauseVideo();
             }
           },
@@ -352,30 +349,34 @@ export function setup(activity) {
     activeOverlayIndex = -1;
   }
 
-  // --- YouTube IFrame API loader ---
+  // --- YouTube IFrame API loader (per-instance) ---
+  //
+  // The YT IFrame API script is the one unavoidable cross-instance global: it
+  // unconditionally attaches itself to `globalThis.YT`. We make the loader
+  // per-instance by giving each setup() its own ytReadyPromise and by polling
+  // for `globalThis.YT.Player` instead of registering window.onYouTubeIframeAPIReady
+  // (which only one instance can own). We also inject the <script> into this
+  // activity's shadow root rather than document.head; the browser caches the
+  // URL so multiple injections cost nothing.
 
   let ytReadyPromise = null;
 
   function loadYouTubeAPI() {
     if (ytReadyPromise) return ytReadyPromise;
 
-    if (window.YT && window.YT.Player) {
-      ytReadyPromise = Promise.resolve();
-      return ytReadyPromise;
-    }
-
     ytReadyPromise = new Promise((resolve) => {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (prev) prev();
-        resolve();
+      const poll = () => {
+        if (globalThis.YT && globalThis.YT.Player) resolve();
+        else setTimeout(poll, 50);
       };
-
-      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-        const tag = document.createElement("script");
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
+      if (!(globalThis.YT && globalThis.YT.Player)) {
+        // Creating a <script> element via createElement is the one operation
+        // that cannot be avoided — innerHTML-injected scripts don't execute.
+        const script = element.ownerDocument.createElement("script");
+        script.src = "https://www.youtube.com/iframe_api";
+        element.appendChild(script);
       }
+      poll();
     });
 
     return ytReadyPromise;
@@ -384,9 +385,12 @@ export function setup(activity) {
   // --- Utility ---
 
   function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function escapeAttr(str) {

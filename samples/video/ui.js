@@ -125,14 +125,9 @@ export function setup(activity) {
 
   function createPlayer(url) {
     const container = element.querySelector("#player-container");
-    const video = document.createElement("video");
-    video.setAttribute("controls", "");
-    video.setAttribute("playsinline", "");
-    const source = document.createElement("source");
-    source.src = url;
-    source.type = "video/mp4";
-    video.appendChild(source);
-    container.appendChild(video);
+    container.insertAdjacentHTML("beforeend",
+      `<video controls playsinline><source src="${encodeURI(url)}" type="video/mp4"></video>`);
+    const video = container.querySelector("video");
     player = new Plyr(video, { loadSprite: false });
     // Replace <use> refs with inline SVG paths (shadow DOM workaround)
     inlineIcons(container);

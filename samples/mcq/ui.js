@@ -85,16 +85,14 @@ export function setup(activity) {
     container.querySelector("#add-answer").addEventListener("click", () => {
       const list = container.querySelector("#answers-list");
       const index = list.querySelectorAll(".answer-item").length;
-      const item = document.createElement("div");
-      item.className = "answer-item";
-      item.dataset.index = index;
-      item.innerHTML = `
-        <input type="checkbox" class="correct-checkbox">
-        <input type="text" class="answer-text" value="">
-        <button type="button" class="remove-answer">Remove</button>
-      `;
-      list.appendChild(item);
-      attachRemoveHandler(item);
+      list.insertAdjacentHTML("beforeend", `
+        <div class="answer-item" data-index="${index}">
+          <input type="checkbox" class="correct-checkbox">
+          <input type="text" class="answer-text" value="">
+          <button type="button" class="remove-answer">Remove</button>
+        </div>
+      `);
+      attachRemoveHandler(list.lastElementChild);
     });
 
     // Attach remove handlers to existing items
@@ -195,9 +193,9 @@ export function setup(activity) {
 
   // Escape HTML to prevent XSS
   function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   // Handle events from backend
