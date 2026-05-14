@@ -291,6 +291,7 @@ export function setup(activity) {
 
   activity.onEvent = (name, value) => {
     if (name === "player.position") {
+      if (value.user === activity.context.user_id) return;
       ghosts.set(value.user, {
         x: value.x,
         y: value.y,
