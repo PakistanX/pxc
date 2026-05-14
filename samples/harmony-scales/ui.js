@@ -83,9 +83,10 @@ export function setup(activity) {
   const el = activity.element;
   let audioCtx = null;
   let keydownHandler = null;
+  let rootEl = null;
 
   function getAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtx) audioCtx = new AudioContext();
     return audioCtx;
   }
 
@@ -146,8 +147,8 @@ export function setup(activity) {
   }
 
   function renderPlay() {
-    if (keydownHandler) {
-      document.removeEventListener("keydown", keydownHandler);
+    if (keydownHandler && rootEl) {
+      rootEl.removeEventListener("keydown", keydownHandler);
       keydownHandler = null;
     }
 
@@ -158,7 +159,7 @@ export function setup(activity) {
 
     el.innerHTML = `
       <style>
-        .h-play { font-family: sans-serif; padding: 24px; }
+        .h-play { font-family: sans-serif; padding: 24px; outline: none; }
         .h-play h2 { margin: 0 0 4px; color: #222; font-size: 20px; }
         .h-play .sub { color: #888; font-size: 13px; margin-bottom: 16px; }
         #staff { position: relative; min-height: 210px; overflow-x: auto; background: #fff; border-radius: 8px; }
@@ -167,7 +168,7 @@ export function setup(activity) {
         .chip.active { background: #e67e22; transform: scale(1.1); }
         .hint { margin-top: 14px; color: #bbb; font-size: 12px; }
       </style>
-      <div class="h-play">
+      <div class="h-play" tabindex="-1">
         <h2>${scale.name}</h2>
         <p class="sub">Press 1–${n} or click to play notes</p>
         <div id="staff"></div>
@@ -179,7 +180,7 @@ export function setup(activity) {
     const xPositions = renderStaff(staffEl, scale.vexKeys, -1);
 
     scale.displayNames.forEach((name, i) => {
-      const chip = document.createElement("div");
+      const chip = el.ownerDocument.createElement("div");
       chip.className = "chip";
       chip.dataset.idx = String(i);
       chip.innerHTML = `${i + 1}<span>${name}</span>`;
@@ -203,10 +204,16 @@ export function setup(activity) {
       }, 600);
     }
 
+    rootEl = el.querySelector(".h-play");
+    rootEl.addEventListener("mousedown", () => rootEl.focus());
     keydownHandler = (e) => {
       const num = parseInt(e.key);
-      if (num >= 1 && num <= n) trigger(num - 1);
+      if (num >= 1 && num <= n) {
+        e.preventDefault();
+        trigger(num - 1);
+      }
     };
-    document.addEventListener("keydown", keydownHandler);
+    rootEl.addEventListener("keydown", keydownHandler);
+    rootEl.focus();
   }
 }
