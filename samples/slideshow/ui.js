@@ -26,6 +26,7 @@ function buildSrcdoc(slidesHtml, assetUrls) {
   <script>
     let deck = new Reveal(document.querySelector('.reveal'), {
       keyboardCondition: 'focused',
+      transition: 'fade',
     });
     deck.initialize();
   <\/script>
