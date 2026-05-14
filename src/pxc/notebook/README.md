@@ -94,6 +94,8 @@ In Open edX, the LTI 1.3 unit needs to be configured with the following settings
 - "Tool Keyset URL" same as "Public JWKS URL"
 - "Custom Parameters" must include "activity_id=..."
 
+Session tokens issued after an LTI launch are signed with a secret persisted at `dist/notebook/lti/session_secret` (auto-generated on first run). This file is what keeps existing LTI sessions valid across server restarts — delete it to invalidate all outstanding tokens.
+
 ## How Activities Work
 
 1. Activity types are discovered by scanning `samples/` for directories containing a `manifest.json`

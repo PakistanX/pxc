@@ -40,10 +40,23 @@ _INSTRUCTOR_ROLES = {
 }
 
 LTI_PREFIX = "/lti"
-_session_secret = secrets.token_urlsafe(32)
 
 constants.LTI_KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
 _key_set = load_or_create_key(constants.LTI_KEY_PATH)
+
+
+def _load_or_create_session_secret() -> str:
+    """Persist the JWT session secret so tokens survive server restarts."""
+    path = constants.LTI_SESSION_SECRET_PATH
+    if path.exists():
+        return path.read_text().strip()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    secret = secrets.token_urlsafe(32)
+    path.write_text(secret)
+    return secret
+
+
+_session_secret = _load_or_create_session_secret()
 
 _lti_templates = Jinja2Templates(
     directory=str(constants.CURRENT_DIR.parent / "lti" / "templates")

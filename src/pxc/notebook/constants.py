@@ -18,4 +18,5 @@ DB_PATH = DIST_DIR / "notebook.db"
 
 # LTI 1.3
 LTI_KEY_PATH = DIST_DIR / "notebook" / "lti" / "private.pem"
+LTI_SESSION_SECRET_PATH = DIST_DIR / "notebook" / "lti" / "session_secret"
 LTI_BASE_URL = os.environ.get("NOTEBOOK_LTI_BASE_URL", "http://127.0.0.1:9753/lti")
