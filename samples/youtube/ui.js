@@ -9,9 +9,15 @@ export function setup(activity) {
     return activity.state.video_id || "";
   }
 
+  function getStartTime() {
+    return activity.state.start_time;
+  }
+
   activity.onEvent = (name, value) => {
     if (name === "fields.change.video_id") {
       activity.state.video_id = value;
+    } else if (name === "fields.change.start_time") {
+      activity.state.start_time = value;
     }
   };
 
@@ -26,11 +32,13 @@ export function setup(activity) {
   }
 
   function renderEditView(videoId) {
+    const startTime = getStartTime();
     element.innerHTML = `
       <style>
         .yt-container { font-family: sans-serif; max-width: 600px; }
         .yt-input { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
         .yt-input input { flex: 1; padding: 0.25rem; }
+        .yt-input input[type="number"] { flex: 0 0 6rem; }
         .save-btn { padding: 0.5rem 1rem; cursor: pointer; }
         .yt-preview iframe { width: 100%; aspect-ratio: 16/9; border: none; }
         .no-video { color: #666; font-style: italic; }
@@ -43,6 +51,10 @@ export function setup(activity) {
         <div class="yt-input">
           <label for="video-id-input">Video ID:</label>
           <input type="text" id="video-id-input" value="${escapeAttr(videoId)}" placeholder="e.g. dQw4w9WgXcQ">
+        </div>
+        <div class="yt-input">
+          <label for="start-time-input">Start time (seconds):</label>
+          <input type="number" id="start-time-input" value="${startTime}" min="0" placeholder="0">
           <button type="button" class="save-btn" id="save-btn">Save</button>
         </div>
         <div id="save-feedback"></div>
@@ -50,17 +62,24 @@ export function setup(activity) {
       </div>
     `;
 
-    renderPreview(videoId);
+    renderPreview(videoId, startTime);
 
     element.querySelector("#video-id-input").addEventListener("input", (e) => {
-      renderPreview(e.target.value.trim());
+      const st = parseInt(element.querySelector("#start-time-input").value, 10) || 0;
+      renderPreview(e.target.value.trim(), st);
+    });
+
+    element.querySelector("#start-time-input").addEventListener("input", (e) => {
+      const vid = element.querySelector("#video-id-input").value.trim();
+      renderPreview(vid, parseInt(e.target.value, 10) || 0);
     });
 
     element.querySelector("#save-btn").addEventListener("click", async () => {
       const newVideoId = element.querySelector("#video-id-input").value.trim();
+      const newStartTime = parseInt(element.querySelector("#start-time-input").value, 10) || 0;
       const feedbackEl = element.querySelector("#save-feedback");
       try {
-        await activity.sendAction("config.save", { video_id: newVideoId });
+        await activity.sendAction("config.save", { video_id: newVideoId, start_time: newStartTime });
         feedbackEl.innerHTML = '<div class="feedback success">Saved!</div>';
       } catch (err) {
         feedbackEl.innerHTML = `<div class="feedback error">Error: ${err.message}</div>`;
@@ -68,16 +87,23 @@ export function setup(activity) {
     });
   }
 
-  function renderPreview(videoId) {
+  function embedUrl(videoId, startTime) {
+    let url = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`;
+    if (startTime > 0) url += `?start=${startTime}`;
+    return url;
+  }
+
+  function renderPreview(videoId, startTime) {
     const preview = element.querySelector("#preview");
     if (videoId) {
-      preview.innerHTML = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}" allowfullscreen></iframe>`;
+      preview.innerHTML = `<iframe src="${embedUrl(videoId, startTime)}" allowfullscreen></iframe>`;
     } else {
       preview.innerHTML = '<p class="no-video">No video to preview.</p>';
     }
   }
 
   function renderPlayView(videoId) {
+    const startTime = getStartTime();
     element.innerHTML = `
       <style>
         .yt-container { font-family: sans-serif; max-width: 600px; }
@@ -86,7 +112,7 @@ export function setup(activity) {
       </style>
       <div class="yt-container">
         ${videoId
-          ? `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}" allowfullscreen></iframe>`
+          ? `<iframe src="${embedUrl(videoId, startTime)}" allowfullscreen></iframe>`
           : '<p class="no-video">No video configured yet.</p>'}
       </div>
     `;

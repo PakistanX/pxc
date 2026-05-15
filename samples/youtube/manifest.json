@@ -5,6 +5,11 @@
       "type": "string",
       "scope": "activity",
       "default": ""
+    },
+    "start_time": {
+      "type": "integer",
+      "scope": "activity",
+      "default": 0
     }
   },
   "actions": {
@@ -13,6 +18,9 @@
       "properties": {
         "video_id": {
           "type": "string"
+        },
+        "start_time": {
+          "type": "integer"
         }
       }
     }
@@ -20,6 +28,9 @@
   "events": {
     "fields.change.video_id": {
       "type": "string"
+    },
+    "fields.change.start_time": {
+      "type": "integer"
     }
   },
   "ui": "ui.js",
