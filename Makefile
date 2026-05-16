@@ -8,6 +8,7 @@ install-dev: ## Install all sub-projects in editable mode plus dev dependencies
 	pip install -e src/pxc/demo
 	pip install -e src/pxc/notebook
 	pip install -e src/pxc/lti
+	pip install -e src/pxc/xblock
 	pip install -e .[dev]
 
 

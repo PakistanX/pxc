@@ -28,7 +28,11 @@ packages = []
 ignore-paths=[
     "src/pxc/notebook/frontend",
     "src/pxc/notebook/migrations/versions",
+    "src/pxc/xblock/migrations",
 ]
+
+[tool.pylint.TYPECHECK]
+generated-members = ["objects"]
 
 [tool.pylint.'MESSAGES CONTROL']
 disable=[
@@ -62,6 +66,8 @@ explicit_package_bases = true
 exclude = [
     "src/pxc/notebook/frontend",
     "src/pxc/notebook/migrations/versions",
+    "src/pxc/xblock/migrations",
+    "src/pxc/xblock/samples",
 ]
 
 [tool.black]

@@ -1,0 +1,3 @@
+# This directory is preserved to prevent edx-platform from crashing on missing
+# locales. Otherwise we need to manually create
+# /openedx/edx-platform/conf/plugins-locale/xblock.v1/pxc

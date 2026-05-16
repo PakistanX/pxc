@@ -1,0 +1,39 @@
+[project]
+name = "pxc-xblock"
+version = "0.1.0"
+description = "PXC XBlock: run PXC activities inside Open edX."
+requires-python = ">=3.11"
+dependencies = [
+    "pxc-lib",
+    "xblock",
+    "web-fragments",
+    "Django>=4.2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pxc.xblock", "pxc.xblock.migrations"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"pxc.xblock" = "."
+"pxc.xblock.migrations" = "migrations"
+
+[tool.setuptools.package-data]
+"pxc.xblock" = [
+    "static/html/*.html",
+    "static/js/*.js",
+    "samples/**/manifest.json",
+    "samples/**/ui.js",
+    "samples/**/sandbox.wasm",
+    "samples/**/*.js",
+    "samples/**/*.css",
+    "samples/**/*.html",
+    "samples/**/*.json",
+]
+
+[project.entry-points."xblock.v1"]
+pxc = "pxc.xblock.pxc_xblock:PxcXBlock"

@@ -14,16 +14,17 @@ The runtime loads manifests, validates actions/events/fields at runtime, execute
 
 ## Packaging
 
-The repo is a multi-distribution layout. `pxc` is a PEP 420 namespace package (no `src/pxc/__init__.py`) shared by four independently installable sub-projects, each with its own `pyproject.toml`:
+The repo is a multi-distribution layout. `pxc` is a PEP 420 namespace package (no `src/pxc/__init__.py`) shared by five independently installable sub-projects, each with its own `pyproject.toml`:
 
-| Distribution   | Path                  | Depends on |
-|----------------|-----------------------|------------|
-| `pxc-lib`      | `src/pxc/lib/`        | —          |
-| `pxc-demo`     | `src/pxc/demo/`       | `pxc-lib`  |
-| `pxc-notebook` | `src/pxc/notebook/`   | `pxc-lib`  |
-| `pxc-lti`      | `src/pxc/lti/`        | `pxc-lib`  |
+| Distribution   | Path                  | Depends on              |
+|----------------|-----------------------|-------------------------|
+| `pxc-lib`      | `src/pxc/lib/`        | —                       |
+| `pxc-demo`     | `src/pxc/demo/`       | `pxc-lib`               |
+| `pxc-notebook` | `src/pxc/notebook/`   | `pxc-lib`               |
+| `pxc-lti`      | `src/pxc/lti/`        | `pxc-lib`               |
+| `pxc-xblock`   | `src/pxc/xblock/`     | `pxc-lib`, `xblock`, `Django` |
 
-The root `pyproject.toml` ships no runtime code — it holds the shared `black` / `mypy` / `pylint` configuration and the `[project.optional-dependencies] dev` group. Use `make install-dev` to install all four sub-projects in editable mode together with the dev tools.
+The root `pyproject.toml` ships no runtime code — it holds the shared `black` / `mypy` / `pylint` configuration and the `[project.optional-dependencies] dev` group. Use `make install-dev` to install all five sub-projects in editable mode together with the dev tools.
 
 ## Codebase layout
 

@@ -48,7 +48,10 @@ export class PXC extends HTMLElement {
     this._flushAgain = false;
   }
 
-  async connectedCallback() {
+  // Parse the data-* attributes common to every transport. Subclasses call
+  // this from their own connectedCallback before reading transport-specific
+  // attrs.
+  _initFromAttrs() {
     const contextAttr = this.getAttribute("data-context");
     if (contextAttr) {
       this.context = JSON.parse(contextAttr);
@@ -68,6 +71,10 @@ export class PXC extends HTMLElement {
     if (permissionAttr) {
       this.permission = permissionAttr;
     }
+  }
+
+  async connectedCallback() {
+    this._initFromAttrs();
 
     const embedMode = this.getAttribute("embed") || "shadow";
 
@@ -330,7 +337,6 @@ export class PXC extends HTMLElement {
 
   disconnectedCallback() {
     if (this._ws) {
-      // Disconnect from websocket on removal from DOM
       this._ws.close();
     }
     this._setOfflineBanner(false);
