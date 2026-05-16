@@ -26,7 +26,7 @@ customElements.define("pxc-activity", PXC);
   <label>Embed
     <select id="sim-embed">
       <option value="shadow" selected>Shadow DOM</option>
-      <option value="iframe">iframe</option>
+      <option value="native">Sandboxed iframe</option>
     </select>
   </label>
   <div class="offline-banner">Offline - reconnecting...</div>
@@ -49,28 +49,25 @@ window.addEventListener("pxc:connection", function(e) {
 <div id="activity-container">
   <pxc-activity data-context="{{ context_json | escape }}"
     data-src="{{ url_for('activity_ui', activity_type=activity_context.name) }}"
-    data-state="{{ state_json | escape }}" data-permission="{{ current_permission }}"></pxc-activity>
+    data-state="{{ state_json | escape }}"
+    data-permission="{{ current_permission }}"
+    data-pxc-token="{{ pxc_token }}"></pxc-activity>
 </div>
 <script>
   document.getElementById("sim-embed").addEventListener("change", function () {
     const container = document.getElementById("activity-container");
-    if (this.value === "iframe") {
-      const iframe = document.createElement("iframe");
-      iframe.src = "/a/{{ activity_context.name }}/embed";
-      iframe.style.width = "100%";
-      iframe.style.border = "1px solid #ccc";
-      iframe.style.height = "200px";
-      container.innerHTML = "";
-      container.appendChild(iframe);
-
-      window.addEventListener("message", function (e) {
-        if (e.data && e.data.type === "pxc:resize") {
-          iframe.style.height = e.data.height + "px";
-        }
-      });
-    } else {
-      location.reload();
+    const existing = container.querySelector("pxc-activity");
+    container.innerHTML = "";
+    const el = document.createElement("pxc-activity");
+    el.setAttribute("data-context", existing.getAttribute("data-context"));
+    el.setAttribute("data-src", existing.getAttribute("data-src"));
+    el.setAttribute("data-state", existing.getAttribute("data-state"));
+    el.setAttribute("data-permission", existing.getAttribute("data-permission"));
+    el.setAttribute("data-pxc-token", existing.getAttribute("data-pxc-token"));
+    if (this.value === "native") {
+      el.setAttribute("embed", "native");
     }
+    container.appendChild(el);
   });
 </script>
 

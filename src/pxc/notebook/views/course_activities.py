@@ -11,6 +11,7 @@ from sqlmodel import Session, col, desc, select
 
 from pxc.lib.manifest_types import PxcActivityManifest
 from pxc.lib.permission import Permission
+from pxc.lib.signing import make_token
 from pxc.notebook import constants
 from pxc.notebook.auth import get_current_user
 from pxc.notebook.db import get_session
@@ -144,6 +145,12 @@ def course_activity_dict(
             "course_id": ca.course_id,
             "activity_id": ca.id,
         },
+        "pxc_token": make_token(
+            activity_id=ca.id,
+            course_id=ca.course_id,
+            user_id=user_id,
+            permission=permission.value,
+        ),
     }
 
 

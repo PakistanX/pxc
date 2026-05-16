@@ -26,6 +26,7 @@ from pxc.lib.event_bus import EventBus
 from pxc.lib.field_store import FieldStore
 from pxc.lib.file_storage import FileStorageError, LocalFileStorage
 from pxc.lib.permission import Permission
+from pxc.lib.signing import TokenError, make_token, verify_token
 from pxc.demo import constants
 from pxc.demo.kv import load_field_store
 
@@ -57,6 +58,14 @@ templates = Jinja2Templates(
     ],
 )
 
+_IFRAME_JS_PATH = constants.STATIC_DIR / "js" / "pxc-iframe.js"
+
+_CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "null",
+    "Vary": "Origin",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+}
+
 
 class ActivityNotFound(Exception):
     """Raised when an activity cannot be found."""
@@ -80,6 +89,29 @@ def load_activity(cookies: dict[str, str], activity_type: str) -> ActivityRuntim
         permission=permission,
     )
     return activity_context
+
+
+def load_activity_from_token(token: str, activity_type: str) -> ActivityRuntime:
+    """Load an activity by verifying an HMAC token (for sandboxed iframe requests)."""
+    try:
+        claims = verify_token(token)
+    except TokenError as e:
+        raise HTTPException(status_code=401, detail="Invalid token") from e
+    if str(claims["aid"]) != activity_type:
+        raise HTTPException(status_code=403, detail="Token mismatch")
+    try:
+        activity_dir = find_activity_dir(activity_type)
+    except ActivityNotFound as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return ActivityRuntime(
+        activity_dir,
+        field_store,
+        file_storage,
+        activity_id=str(claims["aid"]),
+        course_id=str(claims["cid"]),
+        user_id=str(claims["uid"]),
+        permission=Permission(str(claims["p"])),
+    )
 
 
 def find_activity_dir(activity_type: str) -> Path:
@@ -109,6 +141,30 @@ def get_simulation_params(cookies: dict[str, str]) -> tuple[str, Permission]:
     return user_id, permission
 
 
+@app.get("/_pxc/iframe", include_in_schema=False)
+async def pxc_iframe_page() -> HTMLResponse:
+    """Bootstrap HTML document loaded inside sandboxed activity iframes."""
+    return HTMLResponse(
+        '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+        "<style>body{margin:0}</style></head>"
+        '<body><div id="root"></div>'
+        '<script type="module" src="/_pxc/iframe.js"></script>'
+        "</body></html>"
+    )
+
+
+@app.get("/_pxc/iframe.js", include_in_schema=False)
+async def pxc_iframe_js() -> FileResponse:
+    """pxc-iframe.js served with CORS headers so null-origin iframes can load it."""
+    return FileResponse(
+        _IFRAME_JS_PATH,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cross-Origin-Resource-Policy": "cross-origin",
+        },
+    )
+
+
 @app.get("/")
 async def home(request: Request) -> HTMLResponse:
     """List all available activities."""
@@ -129,6 +185,13 @@ async def activity(request: Request, activity_type: str) -> HTMLResponse:
         "activity_id": activity_context.activity_id,
     }
 
+    pxc_token = make_token(
+        activity_id=activity_context.activity_id,
+        course_id=activity_context.course_id,
+        user_id=activity_context.user_id,
+        permission=activity_context.permission.value,
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="activity.html",
@@ -136,33 +199,10 @@ async def activity(request: Request, activity_type: str) -> HTMLResponse:
             "activity_context": activity_context,
             "state_json": json.dumps(activity_state),
             "context_json": json.dumps(context),
+            "pxc_token": pxc_token,
             "simulated_users": SIMULATED_USERS,
             "current_user": activity_context.user_id,
             "permission_levels": [p.value for p in Permission],
-            "current_permission": activity_context.permission.value,
-        },
-    )
-
-
-@app.get("/a/{activity_type}/embed")
-async def activity_embed(request: Request, activity_type: str) -> HTMLResponse:
-    """Serve an activity in a standalone page for iframe embedding."""
-    activity_context = load_activity(request.cookies, activity_type)
-    activity_state = activity_context.get_state()
-
-    context = {
-        "user_id": activity_context.user_id,
-        "course_id": activity_context.course_id,
-        "activity_id": activity_context.activity_id,
-    }
-
-    return templates.TemplateResponse(
-        request=request,
-        name="activity_embed.html",
-        context={
-            "activity_context": activity_context,
-            "state_json": json.dumps(activity_state),
-            "context_json": json.dumps(context),
             "current_permission": activity_context.permission.value,
         },
     )
@@ -185,13 +225,10 @@ async def activity_asset(
 ) -> FileResponse:
     """Serve static files from an activity directory."""
     activity_context = load_activity(request.cookies, activity_type)
-
-    # Security: ensure path doesn't escape activity directory
     try:
         full_path = activity_context.get_asset_path(file_path)
     except AssetAccessError as e:
         raise HTTPException(status_code=404, detail="Access denied") from e
-
     return FileResponse(full_path)
 
 
@@ -222,6 +259,51 @@ async def storage_file(
         raise HTTPException(status_code=404, detail="File not found") from e
     media_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
     return Response(content=content, media_type=media_type)
+
+
+@app.get("/_pxc/t/{token}/a/{activity_type}/ui.js")
+async def activity_ui_token(token: str, activity_type: str) -> FileResponse:
+    """Serve the UI script for an activity (token-in-path auth for sandboxed iframes)."""
+    activity_context = load_activity_from_token(token, activity_type)
+    try:
+        full_path = activity_context.get_ui_path()
+    except AssetAccessError as e:
+        raise HTTPException(status_code=404, detail="Access denied") from e
+    return FileResponse(full_path, headers=_CORS_HEADERS)
+
+
+@app.get("/_pxc/t/{token}/a/{activity_type}/{file_path:path}")
+async def activity_asset_token(
+    token: str, activity_type: str, file_path: str
+) -> FileResponse:
+    """Serve a static asset (token-in-path auth for sandboxed iframes)."""
+    activity_context = load_activity_from_token(token, activity_type)
+    try:
+        full_path = activity_context.get_asset_path(file_path)
+    except AssetAccessError as e:
+        raise HTTPException(status_code=404, detail="Access denied") from e
+    return FileResponse(full_path, headers=_CORS_HEADERS)
+
+
+@app.get(
+    "/_pxc/t/{token}/activity/{activity_type}/storage/{storage_name}/{file_path:path}"
+)
+async def storage_file_token(
+    token: str,
+    activity_type: str,
+    storage_name: str,
+    file_path: str,
+) -> Response:
+    """Serve a storage file (token-in-path auth for sandboxed iframes)."""
+    activity_context = load_activity_from_token(token, activity_type)
+    try:
+        content = activity_context.storage_read(storage_name, file_path, None)
+    except CapabilityError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except FileStorageError as e:
+        raise HTTPException(status_code=404, detail="File not found") from e
+    media_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+    return Response(content=content, media_type=media_type, headers=_CORS_HEADERS)
 
 
 @app.post("/api/activity/{activity_type}/actions/{action_name}")

@@ -23,11 +23,10 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
 from pxc.lib.field_store import FieldStore
-from pxc.lib.file_storage import FileStorage
+from pxc.lib.file_storage import FileStorage, LocalFileStorage
 from pxc.lib.runtime import ActivityRuntime, AssetAccessError
 from pxc.lib.actions import ActionValidationError
 from pxc.lib.event_bus import EventBus
-from pxc.lib.file_storage import LocalFileStorage
 from pxc.lib.permission import Permission
 from pxc.lti import config
 from pxc.lti.core.db import create_db
@@ -60,6 +59,30 @@ app = FastAPI(
 )
 
 app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
+
+_IFRAME_JS_PATH = config.STATIC_DIR / "js" / "pxc-iframe.js"
+_CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+}
+
+
+@app.get("/_pxc/iframe", include_in_schema=False)
+async def pxc_iframe_page() -> HTMLResponse:
+    """Bootstrap HTML document loaded inside sandboxed activity iframes."""
+    return HTMLResponse(
+        '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+        "<style>body{margin:0}</style></head>"
+        '<body><div id="root"></div>'
+        '<script type="module" src="/_pxc/iframe.js"></script>'
+        "</body></html>"
+    )
+
+
+@app.get("/_pxc/iframe.js", include_in_schema=False)
+async def pxc_iframe_js() -> FileResponse:
+    """pxc-iframe.js served with CORS headers so null-origin iframes can load it."""
+    return FileResponse(_IFRAME_JS_PATH, headers=_CORS_HEADERS)
 
 
 @contextmanager
@@ -169,7 +192,7 @@ async def activity_ui(token: str) -> FileResponse:
         full_path = ctx.get_ui_path()
     except AssetAccessError as e:
         raise HTTPException(status_code=404, detail="Access denied") from e
-    return FileResponse(full_path)
+    return FileResponse(full_path, headers=_CORS_HEADERS)
 
 
 @app.get("/activity/{token}/assets/{file_path:path}")
@@ -180,7 +203,7 @@ async def activity_asset(token: str, file_path: str) -> FileResponse:
         full_path = ctx.get_asset_path(file_path)
     except AssetAccessError as e:
         raise HTTPException(status_code=404, detail="Access denied") from e
-    return FileResponse(full_path)
+    return FileResponse(full_path, headers=_CORS_HEADERS)
 
 
 @app.post("/activity/{token}/actions/{action_name}")

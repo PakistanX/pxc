@@ -42,6 +42,7 @@ export class PXC extends HTMLElement {
     this.state = {};
     this.permission = "view";
     this._ws = null;
+    this._iframe = null;
     this._reconnectDelay = 500;
     this._flushing = false;
     this._flushAgain = false;
@@ -53,16 +54,10 @@ export class PXC extends HTMLElement {
       this.context = JSON.parse(contextAttr);
     }
 
-    const embedMode = this.getAttribute("embed") || "shadow";
-
-    if (embedMode === "native") {
-      this._initNative();
-    } else {
-      this._initShadow();
-    }
-
     this._wsUrl = this.getAttribute("data-ws-url");
     this._assetBaseUrl = this.getAttribute("data-asset-base-url");
+    this._storageBaseUrl = this.getAttribute("data-storage-base-url");
+    this._pxcToken = this.getAttribute("data-pxc-token");
 
     const stateAttr = this.getAttribute("data-state");
     if (stateAttr) {
@@ -74,16 +69,21 @@ export class PXC extends HTMLElement {
       this.permission = permissionAttr;
     }
 
-    this.render();
+    const embedMode = this.getAttribute("embed") || "shadow";
 
-    // Ensure the DB is ready before connecting the WebSocket, so that
-    // _flushQueue (called on WS open) can read pending actions.
-    await _openDB();
-
-    this._connectWebSocket();
-    const src = this.getAttribute("data-src");
-    if (src) {
-      this._loadScript(src);
+    if (embedMode === "native") {
+      this._initIframe();
+      await _openDB();
+      this._connectWebSocket();
+    } else {
+      this._initShadow();
+      this.render();
+      await _openDB();
+      this._connectWebSocket();
+      const src = this.getAttribute("data-src");
+      if (src) {
+        this._loadScript(src);
+      }
     }
   }
 
@@ -101,33 +101,66 @@ export class PXC extends HTMLElement {
     this.element.adoptedStyleSheets = [sheet];
   }
 
-  _initNative() {
-    const wrapper = document.createElement("div");
-    this.appendChild(wrapper);
-    this.element = wrapper;
+  _initIframe() {
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "allow-scripts");
+    iframe.src = "/_pxc/iframe";
+    iframe.style.cssText = "width:100%;border:none;display:block;";
+    this.appendChild(iframe);
+    this._iframe = iframe;
 
-    // Shim adoptedStyleSheets on the wrapper div — delegate to document
-    Object.defineProperty(wrapper, "adoptedStyleSheets", {
-      get() {
-        return document.adoptedStyleSheets;
-      },
-      set(sheets) {
-        document.adoptedStyleSheets = sheets;
-      },
+    window.addEventListener("message", (e) => {
+      if (!this._iframe || e.source !== this._iframe.contentWindow) return;
+      const msg = e.data;
+      if (!msg || typeof msg.type !== "string") return;
+
+      if (msg.type === "pxc:ready") {
+        this._sendIframeInit();
+      } else if (msg.type === "pxc:action") {
+        this._pushAction({
+          action: msg.name,
+          value: msg.value,
+          permission: this.permission,
+        });
+      } else if (msg.type === "pxc:resize") {
+        iframe.style.height = msg.height + "px";
+      }
     });
+  }
 
-    // If inside an iframe, send ready/resize messages to parent
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: "pxc:ready" }, "*");
-
-      const observer = new ResizeObserver(() => {
-        window.parent.postMessage(
-          { type: "pxc:resize", height: wrapper.scrollHeight },
-          "*",
-        );
-      });
-      observer.observe(wrapper);
+  _sendIframeInit() {
+    if (!this._iframe) return;
+    const token = this._pxcToken;
+    let assetBaseUrl, storageBaseUrl, uiSrc;
+    if (token) {
+      const id = this.context.activity_id;
+      assetBaseUrl = `${window.location.origin}/_pxc/t/${token}/a/${id}`;
+      storageBaseUrl = `${window.location.origin}/_pxc/t/${token}/activity/${id}/storage`;
+      uiSrc = `${assetBaseUrl}/ui.js`;
+    } else {
+      assetBaseUrl = new URL(
+        this._assetBaseUrl || `/a/${this.context.activity_id}`,
+        window.location.href,
+      ).href;
+      storageBaseUrl = new URL(
+        this._storageBaseUrl ||
+          `/activity/${this.context.activity_id}/storage`,
+        window.location.href,
+      ).href;
+      uiSrc = this.getAttribute("data-src");
     }
+    this._iframe.contentWindow.postMessage(
+      {
+        type: "pxc:init",
+        context: this.context,
+        state: this.state,
+        permission: this.permission,
+        uiSrc,
+        assetBaseUrl,
+        storageBaseUrl,
+      },
+      "*",
+    );
   }
 
   render() {
@@ -144,7 +177,14 @@ export class PXC extends HTMLElement {
     };
     this._ws.onmessage = (e) => {
       const event = JSON.parse(e.data);
-      this.onEvent(event.name, JSON.parse(event.value));
+      if (this._iframe) {
+        this._iframe.contentWindow.postMessage(
+          { type: "pxc:event", name: event.name, value: event.value },
+          "*",
+        );
+      } else {
+        this.onEvent(event.name, JSON.parse(event.value));
+      }
     };
     this._ws.onclose = () => {
       if (this.isConnected) {

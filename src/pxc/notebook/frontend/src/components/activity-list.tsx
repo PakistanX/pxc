@@ -82,7 +82,7 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
             {a.error ? (
               <div className="text-sm text-destructive">{a.error}</div>
             ) : (
-              <PxcActivity context={a.context!} state={a.state} permission={a.permission!} />
+              <PxcActivity context={a.context!} state={a.state} permission={a.permission!} pxcToken={a.pxc_token} />
             )}
           </CardContent>
         </Card>
