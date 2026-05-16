@@ -37,7 +37,7 @@ In all cases:
 - Remove all unnecessary imports from the `pxc.wit`.
 - WIT path in Makefile: `./pxc.wit`
 - Ensure build tools are installed: `npm init -y && npm install --save-dev esbuild @bytecodealliance/componentize-js`
-- Validate with: `source .venv/bin/activate && python src/pxc/tools/validate_manifest.py samples/<name>/manifest.json`
+- Validate with: `python src/pxc/lib/tools/validate_manifest.py samples/<name>/manifest.json`
 
 # Manifest Schema Reference
 

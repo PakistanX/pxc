@@ -12,11 +12,25 @@ Portable, SandboXed Components — a standard for portable, sandboxed online lea
 
 The runtime loads manifests, validates actions/events/fields at runtime, executes WASM sandboxes with capability-based permissions, and routes events between UIs and sandboxes via WebSocket.
 
+## Packaging
+
+The repo is a multi-distribution layout. `pxc` is a PEP 420 namespace package (no `src/pxc/__init__.py`) shared by four independently installable sub-projects, each with its own `pyproject.toml`:
+
+| Distribution   | Path                  | Depends on |
+|----------------|-----------------------|------------|
+| `pxc-lib`      | `src/pxc/lib/`        | —          |
+| `pxc-demo`     | `src/pxc/demo/`       | `pxc-lib`  |
+| `pxc-notebook` | `src/pxc/notebook/`   | `pxc-lib`  |
+| `pxc-lti`      | `src/pxc/lti/`        | `pxc-lib`  |
+
+The root `pyproject.toml` ships no runtime code — it holds the shared `black` / `mypy` / `pylint` configuration and the `[project.optional-dependencies] dev` group. Use `make install-dev` to install all four sub-projects in editable mode together with the dev tools.
+
 ## Codebase layout
 
 ```
 src/pxc/
-  lib/                    Core runtime library (Python)
+  lib/                    Core runtime library (Python) — distribution: pxc-lib
+    pyproject.toml
     runtime.py            ActivityRuntime — central orchestrator
     sandbox.py            WASM Component Model executor (wasmtime)
     fields.py             Field type/scope validation (FieldChecker)
@@ -31,19 +45,25 @@ src/pxc/
     sandbox/
       manifest.schema.json  JSON Schema for activity manifests
       pxc.wit              Canonical WIT: types + state/grading/http/storage/analytics interfaces
+    static/js/pxc.js      <pxc-activity> web component (shared across apps)
+    tools/
+      validate_manifest.py  Manifest validation script
+      cache_component.py    Pre-compile WASM components for faster startup
     tests/
       runtime/            Runtime integration tests
       samples/            Per-sample activity tests
         conftest.py       make_runtime() helper — creates ActivityRuntime with MemoryKVStore + MemoryFileStorage
       test_fields.py, test_actions.py, test_events.py, test_capabilities.py, etc.
 
-  demo/                   Minimal demo FastAPI app (port 9752)
+  demo/                   Minimal demo FastAPI app (port 9752) — distribution: pxc-demo
+    pyproject.toml
     app.py                Routes, WebSocket, asset serving
     kv.py                 KVStore (MemoryKVStore subclass with JSON file persistence)
     templates/            Jinja2 templates
     tests/
 
-  notebook/               PXC notebook app (port 9753)
+  notebook/               PXC notebook app (port 9753) — distribution: pxc-notebook
+    pyproject.toml
     app.py                FastAPI server — REST API + WebSocket + activity execution
     models.py             SQLModel: Course, Page, PageActivity
     db.py                 SQLite database setup + engine
@@ -53,7 +73,8 @@ src/pxc/
     frontend/             Next.js static app (TypeScript, React)
     tests/
 
-  lti/                    LTI 1.3 tool provider (port 9754)
+  lti/                    LTI 1.3 tool provider (port 9754) — distribution: pxc-lti
+    pyproject.toml
     app.py                FastAPI server — OIDC, deep linking, resource link launches
     config.py             Env-driven configuration (LTI_BASE_URL, etc.)
     integration.py        Bridge between LTI launches and ActivityRuntime
@@ -67,12 +88,7 @@ src/pxc/
       db.py               Platform storage
     templates/            Jinja2 templates (admin UI, activity render, launch error)
 
-  static/js/pxc.js      <pxc-activity> web component (shared across apps)
-  tools/
-    validate_manifest.py  Manifest validation script
-
 samples/                  Sample activities (mcq, quiz, chat, image, video, etc.)
-.notes/                   Architecture notes
 ```
 
 ## Core runtime architecture

@@ -1,7 +1,15 @@
 .DEFAULT_GOAL := help
-.PHONY: help samples test
+.PHONY: help samples test install-dev
 
 ###### Development
+
+install-dev: ## Install all sub-projects in editable mode plus dev dependencies
+	pip install -e src/pxc/lib
+	pip install -e src/pxc/demo
+	pip install -e src/pxc/notebook
+	pip install -e src/pxc/lti
+	pip install -e .[dev]
+
 
 SAMPLE_DIRS := $(dir $(wildcard samples/*/Makefile)) $(dir $(wildcard src/pxc/notebook/samples/courseactivities/*/Makefile))
 
@@ -12,7 +20,7 @@ samples-build: ## Build all sample activities
 	$(MAKE) samples-cache
 
 samples-cache: ## Build .wasm.bin cache files
-	for path in $(wildcard samples/*/sandbox.wasm); do ./src/pxc/tools/cache_component.py $$path; done
+	for path in $(wildcard samples/*/sandbox.wasm); do ./src/pxc/lib/tools/cache_component.py $$path; done
 
 demo-server: ## Run a development server for the demo app
 	fastapi dev src/pxc/demo/app.py --host=127.0.0.1 --port=9752
@@ -44,7 +52,7 @@ test-format: ## Run formatting tests
 	black --check src/
 
 test-manifests: ## Validate all manifest.json files
-	@for f in samples/*/manifest.json src/pxc/notebook/samples/courseactivities/*/manifest.json; do echo "$$f" && ./src/pxc/tools/validate_manifest.py "$$f" || exit 1; done
+	@for f in samples/*/manifest.json src/pxc/notebook/samples/courseactivities/*/manifest.json; do echo "$$f" && ./src/pxc/lib/tools/validate_manifest.py "$$f" || exit 1; done
 
 test-codegen: ## Make sure that manifest types are up-to-date
 	$(MAKE) --always-make manifest-types CODEGEN_OPTIONS="--check"

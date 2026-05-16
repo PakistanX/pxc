@@ -1,37 +1,28 @@
 [project]
-name = "pxc-demo"
+name = "pxc"
 version = "0.1.0"
-dependencies = [
-    "alembic",
-    "fastapi[standard]",
-    "jinja2",
-    "jsonschema",
-    "sqlmodel",
-    "uvicorn[standard]",
-    "wasmtime",
-    # for markdown activity
-    "markdown",
-    "componentize-py",
-    # LTI
-    "PyJWT[crypto]",
-    "jwcrypto",
-]
+description = "Aggregator for PXC development. Not published — see src/pxc/{lib,demo,notebook,lti}/pyproject.toml for the individual distributions."
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [
     "black",
+    "componentize-py",
     "datamodel-code-generator",
     "httpx",
     "mypy",
     "pylint",
     "pytest",
-    "types-markdown",
-    # LTI
     "responses",
+    "types-markdown",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
 
 [tool.pylint.MAIN]
 ignore-paths=[
@@ -65,6 +56,9 @@ plugins = ['pydantic.mypy']
 warn_unused_configs = true
 ignore_missing_imports = true
 strict = true
+mypy_path = "src"
+namespace_packages = true
+explicit_package_bases = true
 exclude = [
     "src/pxc/notebook/frontend",
     "src/pxc/notebook/migrations/versions",

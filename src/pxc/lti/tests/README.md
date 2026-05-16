@@ -6,8 +6,7 @@ Comprehensive test suite for the PXC LTI 1.3 tool provider implementation.
 
 ### All LTI tests:
 ```bash
-source .venv/bin/activate
-pytest src/tests/lti/ -v
+pytest src/lti/tests/ -v
 ```
 
 ### Specific test modules:

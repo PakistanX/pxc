@@ -5,7 +5,7 @@ from pathlib import Path
 
 CURRENT_DIR = Path(__file__).parent
 TEMPLATES_DIR = CURRENT_DIR / "templates"
-STATIC_DIR = CURRENT_DIR.parent / "static"
+STATIC_DIR = CURRENT_DIR.parent / "lib" / "static"
 SAMPLES_DIR = CURRENT_DIR.parent.parent.parent / "samples"
 
 DATA_DIR = CURRENT_DIR.parent.parent.parent / "dist" / "lti"

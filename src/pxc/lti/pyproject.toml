@@ -1,0 +1,28 @@
+[project]
+name = "pxc-lti"
+version = "0.1.0"
+description = "PXC LTI 1.3 tool provider: launches PXC activities from LMS platforms (Canvas, Moodle, Open edX…)."
+requires-python = ">=3.11"
+dependencies = [
+    "pxc-lib",
+    "fastapi[standard]",
+    "jinja2",
+    "jwcrypto",
+    "PyJWT[crypto]",
+    "sqlmodel",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pxc.lti", "pxc.lti.core"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"pxc.lti" = "."
+"pxc.lti.core" = "core"
+
+[tool.setuptools.package-data]
+"pxc.lti" = ["templates/**/*"]

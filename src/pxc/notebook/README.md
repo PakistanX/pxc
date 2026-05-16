@@ -100,7 +100,7 @@ Session tokens issued after an LTI launch are signed with a secret persisted at 
 
 1. Activity types are discovered by scanning `samples/` for directories containing a `manifest.json`
 2. When a user opens an activity, the backend creates an PXC `ActivityRuntime` that loads the manifest and manages sandbox execution
-3. The frontend renders a `<pxc-activity>` custom element (defined in [src/pxc/static/js/pxc.js](../static/js/pxc.js)) which connects via WebSocket
+3. The frontend renders a `<pxc-activity>` custom element (defined in [src/pxc/lib/static/js/pxc.js](../lib/static/js/pxc.js)) which connects via WebSocket
 4. Actions and events flow between the client script and the WASM sandbox through the WebSocket, with permission-based filtering via the `EventBus`
 
 Permission levels: **view** (read-only), **play** (interactive, for learners), **edit** (authoring).

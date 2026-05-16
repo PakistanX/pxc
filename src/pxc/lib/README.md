@@ -101,7 +101,7 @@ my-activity/
 The manifest format is defined by a JSON Schema at [`src/pxc/lib/sandbox/manifest.schema.json`](./sandbox/manifest.schema.json). To validate a manifest:
 
 ```bash
-./src/pxc/tools/validate_manifest.py samples/my-activity/manifest.json
+./src/pxc/lib/tools/validate_manifest.py samples/my-activity/manifest.json
 ```
 
 #### Fields
@@ -233,7 +233,7 @@ The `activity` object exposes the following properties and methods:
 - `getAssetUrl(path)`: Returns the URL for an asset in the activity directory (served by the `activity_asset` endpoint).
 - `onEvent(name, value)`: Override this callback to handle events from the server. Called for every event with the parsed value.
 
-The `PXC` class is implemented in [`pxc.js`](../static/js/pxc.js).
+The `PXC` class is implemented in [`pxc.js`](./static/js/pxc.js).
 
 
 ### Server sandbox (declared via `server` field)
@@ -480,7 +480,7 @@ Events are delivered in real time via a WebSocket connection established on page
 
 #### Recommendations
 
-- **Use a custom element.** Our implementation uses a [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) (`<pxc-activity>`), which provides a clean encapsulation boundary and works with any framework. See [`pxc.js`](../static/js/pxc.js).
+- **Use a custom element.** Our implementation uses a [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) (`<pxc-activity>`), which provides a clean encapsulation boundary and works with any framework. See [`pxc.js`](./static/js/pxc.js).
 - **Pass initial state as data attributes.** We serialize the context into `data-context` (a JSON object with `user_id`, `course_id`, `activity_id`), the state into `data-state`, the permission into `data-permission`, and the client script path into `data-src`. This avoids extra round-trips. See [`activity.html`](../demo/templates/activity.html).
 - **Support both shadow DOM and iframe embedding.** Shadow DOM provides style encapsulation with lower overhead; iframes provide full isolation. The `<pxc-activity>` element supports an `embed` attribute that controls how the activity is rendered:
   - **`shadow`** (default): The activity runs inside a closed shadow DOM. This provides style encapsulation — activity CSS won't leak into the host page and vice versa — but doesn't fully isolate the activity from the parent document.

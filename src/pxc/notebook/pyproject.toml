@@ -1,0 +1,31 @@
+[project]
+name = "pxc-notebook"
+version = "0.1.0"
+description = "PXC notebook app: courseware FastAPI server with SQLite persistence and a Next.js frontend."
+requires-python = ">=3.11"
+dependencies = [
+    "pxc-lib",
+    "alembic",
+    "fastapi[standard]",
+    "jinja2",
+    "markdown",
+    "sqlmodel",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pxc.notebook"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"pxc.notebook" = "."
+
+[tool.setuptools.package-data]
+"pxc.notebook" = [
+    "migrations/**/*",
+    "samples/**/*",
+    "frontend/out/**/*",
+]
