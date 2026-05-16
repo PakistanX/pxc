@@ -37,7 +37,7 @@ def admin_client(admin_test_engine: Engine, tmp_path: Path) -> TestClient:
     SQLModel.metadata.create_all(admin_test_engine)
 
     key_set = load_or_create_key(tmp_path / "test_key.pem")
-    templates_dir = Path(__file__).parent.parent.parent / "pxc" / "lti" / "templates"
+    templates_dir = Path(__file__).parent.parent / "templates"
     templates = Jinja2Templates(directory=str(templates_dir))
 
     # Create a simple launch handler

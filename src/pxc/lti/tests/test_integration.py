@@ -57,7 +57,7 @@ def integration_client(
     tmp_path: Path,
 ) -> TestClient:
     """Create TestClient with full LTI routes."""
-    templates_dir = Path(__file__).parent.parent.parent / "pxc" / "lti" / "templates"
+    templates_dir = Path(__file__).parent.parent / "templates"
     templates = Jinja2Templates(directory=str(templates_dir))
 
     # Track launch calls
