@@ -22,12 +22,6 @@ interface state {
     get-field: func(name: string, context: option<context>) -> string;
     set-field: func(name: string, value: string, context: option<context>) -> bool;
 
-    log-get: func(name: string, entry-id: u32, context: option<context>) -> string;
-    log-get-range: func(name: string, from-id: u32, to-id: u32, context: option<context>) -> string;
-    log-append: func(name: string, value: string, context: option<context>) -> u32;
-    log-delete: func(name: string, entry-id: u32, context: option<context>) -> bool;
-    log-delete-range: func(name: string, from-id: u32, to-id: u32, context: option<context>) -> u32;
-
     get-usernames: func(ids: list<string>) -> list<tuple<string, string>>;
 }
 

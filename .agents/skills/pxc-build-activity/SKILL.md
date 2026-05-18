@@ -34,7 +34,7 @@ First, determine the working context:
 In all cases:
 
 - Fetch the WIT file: download `./src/pxc/lib/sandbox/pxc.wit` and save as `pxc.wit` in the activity directory
-- Remove all unnecessary imports from the `pxc.wit`.
+- IMPORTANT Remove all unnecessary imports and comments from the `pxc.wit`.
 - WIT path in Makefile: `./pxc.wit`
 - Ensure build tools are installed: `npm init -y && npm install --save-dev esbuild @bytecodealliance/componentize-js`
 - Validate with: `python src/pxc/lib/tools/validate_manifest.py samples/<name>/manifest.json`
