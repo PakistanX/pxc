@@ -440,7 +440,7 @@ CREATE TABLE pxc_log_entries (
 );
 ```
 
-With this table, `logAppend` becomes an `INSERT` with a `SELECT max(entry_id) + 1`, `log_get` is a simple `SELECT ... WHERE entry_id = ?`, `logGetRange` is `SELECT ... WHERE entry_id >= ? AND entry_id < ? ORDER BY entry_id`, and `logDelete`/`logDeleteRange` are `DELETE` statements. A separate sequence or `max + 1` query provides the next ID. This representation scales well and supports efficient range queries via the primary key index.
+With this table, `logAppend` becomes an `INSERT` (the table's auto-increment column supplies the id), `logGet` is a simple `SELECT ... WHERE entry_id = ?`, `logGetAfter` / `logGetBefore` are `SELECT ... WHERE entry_id > ? ORDER BY entry_id ASC|DESC LIMIT count`, and `logDelete` / `logDeleteBefore` / `logClear` are `DELETE` statements. The composite index supports efficient cursor pagination.
 
 See the [`samples/chat`](../../samples/chat) activity for a working example.
 

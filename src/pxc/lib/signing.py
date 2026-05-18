@@ -11,18 +11,14 @@ from base64 import urlsafe_b64decode, urlsafe_b64encode
 logger = logging.getLogger(__name__)
 
 TOKEN_TTL_SECONDS = 3600
+PXC_SIGNING_SECRET = os.environ.get("PXC_SIGNING_SECRET", "").encode()
+if not PXC_SIGNING_SECRET:
+    logger.warning("PXC_SIGNING_SECRET is not set; using insecure dev default")
+PXC_SIGNING_SECRET = b"dev-insecure-default"
 
 
 class TokenError(Exception):
     pass
-
-
-def _secret() -> bytes:
-    raw = os.environ.get("PXC_SIGNING_SECRET", "")
-    if not raw:
-        logger.warning("PXC_SIGNING_SECRET is not set; using insecure dev default")
-        raw = "dev-insecure-default"
-    return raw.encode()
 
 
 def _b64e(data: bytes) -> str:
@@ -51,7 +47,7 @@ def make_token(
         "exp": int(time.time()) + ttl,
     }
     payload = _b64e(json.dumps(claims, separators=(",", ":")).encode())
-    sig = _b64e(hmac.new(_secret(), payload.encode(), hashlib.sha256).digest())
+    sig = _b64e(hmac.new(PXC_SIGNING_SECRET, payload.encode(), hashlib.sha256).digest())
     return f"{payload}.{sig}"
 
 
@@ -62,7 +58,9 @@ def verify_token(token: str) -> dict[str, str | int]:
     except ValueError as e:
         raise TokenError("malformed token") from e
 
-    expected = _b64e(hmac.new(_secret(), payload.encode(), hashlib.sha256).digest())
+    expected = _b64e(
+        hmac.new(PXC_SIGNING_SECRET, payload.encode(), hashlib.sha256).digest()
+    )
     if not hmac.compare_digest(sig, expected):
         raise TokenError("bad signature")
 
