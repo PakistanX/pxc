@@ -1,5 +1,3 @@
-REPO_ROOT := ../..
-
 # This shim is to build yjs which refers to location.search, but which isn't available here.
 LOCATION_SHIM := if(typeof location==="object"){try{void location.search}catch(e){globalThis.location={search:""}}}
 

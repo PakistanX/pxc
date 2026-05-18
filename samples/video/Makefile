@@ -1,7 +1,3 @@
-REPO_ROOT := ../..
-SANDBOX_LIB := $(wildcard $(REPO_ROOT)/src/pxc/lib/sandbox/*.js)
-
-
 build: sandbox.wasm ui.bundle.js
 
 sandbox.bundle.js: sandbox.js

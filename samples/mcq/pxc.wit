@@ -14,7 +14,6 @@ interface types {
     }
 }
 
-// Always available — every sandbox gets state implicitly.
 interface state {
     use types.{context, permission};
 

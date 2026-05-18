@@ -1,6 +1,3 @@
-REPO_ROOT := ../..
-
-
 build: sandbox.wasm
 
 sandbox.wasm: pxc.wit server.py

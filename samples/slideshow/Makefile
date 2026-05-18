@@ -1,7 +1,3 @@
-REPO_ROOT := ../..
-SANDBOX_LIB := $(wildcard $(REPO_ROOT)/src/pxc/lib/sandbox/*.js)
-
-
 REVEAL_SRC := node_modules/reveal.js/dist
 
 build: sandbox.wasm assets/reveal/reveal.js
