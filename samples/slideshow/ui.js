@@ -22,14 +22,14 @@ function buildSrcdoc(slidesHtml, assetUrls) {
 </head>
 <body>
   <div class="reveal"><div class="slides">${slidesHtml}</div></div>
-  <script src="${assetUrls.revealJs}"><\/script>
+  <script src="${assetUrls.revealJs}"></script>
   <script>
     let deck = new Reveal(document.querySelector('.reveal'), {
       keyboardCondition: 'focused',
       transition: 'fade',
     });
     deck.initialize();
-  <\/script>
+  </script>
 </body>
 </html>`;
 }
