@@ -33,10 +33,12 @@ interface state {
     set-field: func(name: string, value: string, context: option<context>) -> bool;
 
     log-get: func(name: string, entry-id: u32, context: option<context>) -> string;
-    log-get-range: func(name: string, from-id: u32, to-id: u32, context: option<context>) -> string;
+    log-get-after: func(name: string, after-id: option<u32>, count: u32, context: option<context>) -> string;
+    log-get-before: func(name: string, before-id: option<u32>, count: u32, context: option<context>) -> string;
     log-append: func(name: string, value: string, context: option<context>) -> u32;
     log-delete: func(name: string, entry-id: u32, context: option<context>) -> bool;
-    log-delete-range: func(name: string, from-id: u32, to-id: u32, context: option<context>) -> u32;
+    log-delete-before: func(name: string, before-id: u32, context: option<context>) -> u32;
+    log-clear: func(name: string, context: option<context>) -> u32;
 }
 
 // Opt-in via `capabilities.grading: {}`.

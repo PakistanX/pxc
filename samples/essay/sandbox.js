@@ -4,13 +4,22 @@ import {
   sendEvent,
   logAppend,
   logGet,
-  logGetRange,
+  logGetAfter,
   logDelete,
   getUsernames,
 } from "pxc:sandbox/state";
 
 function getSubmissions() {
-  const submissions = JSON.parse(logGetRange("submissions", 0, 1000, null));
+  // Cursor-paginate the entire submissions log: keep asking for the next batch
+  // after the highest id we've seen until a batch comes back empty.
+  const submissions = [];
+  let cursor = null;
+  while (true) {
+    const batch = JSON.parse(logGetAfter("submissions", cursor, 100, null));
+    if (batch.length === 0) break;
+    submissions.push(...batch);
+    cursor = batch[batch.length - 1].id;
+  }
   const ids = [...new Set(submissions.map((s) => s.value.user_id).filter((x) => x))];
   const names = Object.fromEntries(getUsernames(ids));
   for (const s of submissions) {

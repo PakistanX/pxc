@@ -183,10 +183,12 @@ class ActivityRuntime:
                 "get-field": self.get_field,
                 "set-field": self.set_field,
                 "log-get": self.log_get,
-                "log-get-range": self.log_get_range,
+                "log-get-after": self.log_get_after,
+                "log-get-before": self.log_get_before,
                 "log-append": self.log_append,
                 "log-delete": self.log_delete,
-                "log-delete-range": self.log_delete_range,
+                "log-delete-before": self.log_delete_before,
+                "log-clear": self.log_clear,
                 "get-usernames": self.get_usernames,
             },
         }
@@ -485,7 +487,7 @@ class ActivityRuntime:
         """
         if isinstance(self.field_checker.get_definition(name), LogField):
             raise FieldValidationError(
-                f"Field '{name}' is of type 'log'; use log_get/log_get_range instead"
+                f"Field '{name}' is of type 'log'; use log_get/log_get_after/log_get_before instead"
             )
         field_scope = self.field_checker.get_scope(name)
         activity_id, course_id, user_id = self._scope_key_segments(field_scope, context)
@@ -525,16 +527,39 @@ class ActivityRuntime:
         )
         return json.dumps(value)
 
-    def log_get_range(
-        self, name: str, from_id: int, to_id: int, context: SandboxContext | None = None
+    def log_get_after(
+        self,
+        name: str,
+        after_id: int | None,
+        count: int,
+        context: SandboxContext | None = None,
     ) -> str:
-        """Get log entries in range [from_id, to_id).
+        """Get up to `count` log entries with id > after_id, ascending.
 
-        Returns JSON-encoded list of {id, value} dicts.
+        If after_id is None, start from the oldest entry. Returns JSON-encoded
+        list of {id, value} dicts.
         """
         activity_id, course_id, user_id = self._log_scope_segments(name, context)
-        result = self.field_store.log_get_range(
-            course_id, self.name, activity_id, user_id, name, from_id, to_id
+        result = self.field_store.log_get_after(
+            course_id, self.name, activity_id, user_id, name, after_id, count
+        )
+        return json.dumps(result)
+
+    def log_get_before(
+        self,
+        name: str,
+        before_id: int | None,
+        count: int,
+        context: SandboxContext | None = None,
+    ) -> str:
+        """Get up to `count` log entries with id < before_id, descending.
+
+        If before_id is None, start from the newest entry. Returns JSON-encoded
+        list of {id, value} dicts (newest first).
+        """
+        activity_id, course_id, user_id = self._log_scope_segments(name, context)
+        result = self.field_store.log_get_before(
+            course_id, self.name, activity_id, user_id, name, before_id, count
         )
         return json.dumps(result)
 
@@ -558,13 +583,20 @@ class ActivityRuntime:
             course_id, self.name, activity_id, user_id, name, entry_id
         )
 
-    def log_delete_range(
-        self, name: str, from_id: int, to_id: int, context: SandboxContext | None = None
+    def log_delete_before(
+        self, name: str, before_id: int, context: SandboxContext | None = None
     ) -> int:
-        """Delete log entries in range [from_id, to_id). Returns count deleted."""
+        """Delete all log entries with id < before_id. Returns count deleted."""
         activity_id, course_id, user_id = self._log_scope_segments(name, context)
-        return self.field_store.log_delete_range(
-            course_id, self.name, activity_id, user_id, name, from_id, to_id
+        return self.field_store.log_delete_before(
+            course_id, self.name, activity_id, user_id, name, before_id
+        )
+
+    def log_clear(self, name: str, context: SandboxContext | None = None) -> int:
+        """Delete all entries in a log field. Returns count deleted."""
+        activity_id, course_id, user_id = self._log_scope_segments(name, context)
+        return self.field_store.log_clear(
+            course_id, self.name, activity_id, user_id, name
         )
 
     def http_request(self, url: str, method: str, body: str, headers: str) -> str:

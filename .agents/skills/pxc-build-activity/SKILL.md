@@ -133,7 +133,7 @@ The sandbox script exports `getState` and `onAction`, and imports host functions
 ```javascript
 // Always available — no capability required
 import { getField, setField, sendEvent } from "pxc:sandbox/state";
-// import { logAppend, logGet, logGetRange, logDelete, logDeleteRange } from "pxc:sandbox/state";
+// import { logAppend, logGet, logGetAfter, logGetBefore, logDelete, logDeleteBefore, logClear } from "pxc:sandbox/state";
 
 // Opt-in: declare capabilities.grading: {} in manifest.json
 // import { submitGrade, reportCompleted, reportPassed, reportFailed, reportProgressed, reportScored } from "pxc:sandbox/grading";
@@ -172,11 +172,18 @@ Each capability declared in `manifest.json` unlocks a matching WIT interface und
 - `getField(name, context)` → JSON string of field value. `context` is optional (pass `null` or omit for the current context).
 - `setField(name, jsonStringValue, context)` → bool
 - `sendEvent(name, jsonStringValue, context, permission)` → string. `context` is `null` (broadcast to activity) or e.g. `{ userId: "alice" }` to target a user. `permission` is the minimum permission level to receive the event.
-- `logAppend(name, jsonStringValue, context)` → entry ID (u32)
+- `logAppend(name, jsonStringValue, context)` → entry ID (u32). IDs are strictly increasing but may be sparse — treat the returned id as an opaque cursor, do not assume `0, 1, 2, …`.
 - `logGet(name, entryId, context)` → JSON string (or `"null"` if missing)
-- `logGetRange(name, fromId, toId, context)` → JSON string (array of `{id, value}`)
+- `logGetAfter(name, afterIdOrNull, count, context)` → JSON string (array of `{id, value}`, ascending). `afterIdOrNull = null` starts from the oldest entry. The anchor is exclusive: `afterId = X` returns entries with `id > X`. Use this for cursor pagination — pass the last returned `id` as the next call's anchor.
+- `logGetBefore(name, beforeIdOrNull, count, context)` → JSON string (array of `{id, value}`, descending — newest first). `beforeIdOrNull = null` returns the most recent entries. Use this for tail-style UIs ("latest N").
 - `logDelete(name, entryId, context)` → bool
-- `logDeleteRange(name, fromId, toId, context)` → count (u32)
+- `logDeleteBefore(name, beforeId, context)` → count (u32). Retention prune: deletes every entry with `id < beforeId`.
+- `logClear(name, context)` → count (u32). Deletes every entry in the log.
+
+**Pick the right call:**
+- "Show the latest N entries" → `logGetBefore(name, null, N)`. Reverse the result in the sandbox if the UI wants oldest-first.
+- "Fetch every entry" → cursor loop: keep calling `logGetAfter(name, cursor, batchSize, context)` (starting `cursor = null`) until the returned batch is empty, taking the last entry's `id` as the next cursor.
+- Never use `logGetAfter(name, null, large)` as a "give me everything" shortcut — that pattern is fragile once ids are sparse and grows the payload silently.
 
 ## `pxc:sandbox/grading` (requires `capabilities.grading: {}`)
 

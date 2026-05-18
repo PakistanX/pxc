@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import event
+from sqlalchemy import desc, event
 from sqlmodel import Field, SQLModel, UniqueConstraint, col, select
 
 from pxc.lib.field_store import FieldStore
@@ -27,44 +27,22 @@ class FieldEntry(SQLModel, table=True):
 
 
 class FieldLogEntry(SQLModel, table=True):
+    """A single entry in a log field. The auto-increment ``id`` is the entry id
+    handed back to callers — strictly increasing but possibly sparse across logs.
+    """
+
     id: int | None = Field(default=None, primary_key=True)
     course_id: str = Field(index=True)
     activity_name: str = Field(index=True)
     activity_id: str = Field(index=True)
     user_id: str = Field(index=True)
     key: str = Field(index=True)
-    entry_id: int
     value: str  # JSON-encoded
-
-    __table_args__ = (
-        UniqueConstraint(
-            "course_id",
-            "activity_name",
-            "activity_id",
-            "user_id",
-            "key",
-            "entry_id",
-        ),
-    )
-
-
-class FieldLogSeq(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    course_id: str = Field(index=True)
-    activity_name: str = Field(index=True)
-    activity_id: str = Field(index=True)
-    user_id: str = Field(index=True)
-    key: str = Field(index=True)
-    next_id: int = Field(default=0)
-
-    __table_args__ = (
-        UniqueConstraint("course_id", "activity_name", "activity_id", "user_id", "key"),
-    )
 
 
 def _key_filter(
     stmt: Any,
-    model: type[FieldEntry] | type[FieldLogEntry] | type[FieldLogSeq],
+    model: type[FieldEntry] | type[FieldLogEntry],
     course_id: str,
     activity_name: str,
     activity_id: str,
@@ -191,42 +169,64 @@ class SQLiteFieldStore(FieldStore):
                 activity_id,
                 user_id,
                 key,
-            ).where(col(FieldLogEntry.entry_id) == entry_id)
+            ).where(col(FieldLogEntry.id) == entry_id)
             entry = session.exec(stmt).first()
             if entry is None:
                 return None
             result: FieldType = json.loads(entry.value)
             return result
 
-    def log_get_range(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def log_get_after(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        after_id: int | None,
+        count: int,
     ) -> list[dict[str, Any]]:
         with db.session_scope() as session:
-            stmt = (
-                _key_filter(
-                    select(FieldLogEntry),
-                    FieldLogEntry,
-                    course_id,
-                    activity_name,
-                    activity_id,
-                    user_id,
-                    key,
-                )
-                .where(
-                    col(FieldLogEntry.entry_id) >= from_id,
-                    col(FieldLogEntry.entry_id) < to_id,
-                )
-                .order_by(col(FieldLogEntry.entry_id))
+            stmt = _key_filter(
+                select(FieldLogEntry),
+                FieldLogEntry,
+                course_id,
+                activity_name,
+                activity_id,
+                user_id,
+                key,
             )
+            if after_id is not None:
+                stmt = stmt.where(col(FieldLogEntry.id) > after_id)
+            stmt = stmt.order_by(col(FieldLogEntry.id)).limit(count)
             entries = session.exec(stmt).all()
-            return [{"id": e.entry_id, "value": json.loads(e.value)} for e in entries]
+            return [{"id": e.id, "value": json.loads(e.value)} for e in entries]
+
+    def log_get_before(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
+        before_id: int | None,
+        count: int,
+    ) -> list[dict[str, Any]]:
+        with db.session_scope() as session:
+            stmt = _key_filter(
+                select(FieldLogEntry),
+                FieldLogEntry,
+                course_id,
+                activity_name,
+                activity_id,
+                user_id,
+                key,
+            )
+            if before_id is not None:
+                stmt = stmt.where(col(FieldLogEntry.id) < before_id)
+            stmt = stmt.order_by(desc(col(FieldLogEntry.id))).limit(count)
+            entries = session.exec(stmt).all()
+            return [{"id": e.id, "value": json.loads(e.value)} for e in entries]
 
     def log_append(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
@@ -238,40 +238,19 @@ class SQLiteFieldStore(FieldStore):
         value: FieldType,
     ) -> int:
         with db.session_scope() as session:
-            stmt = _key_filter(
-                select(FieldLogSeq),
-                FieldLogSeq,
-                course_id,
-                activity_name,
-                activity_id,
-                user_id,
-                key,
-            )
-            seq = session.exec(stmt).first()
-            if seq is None:
-                seq = FieldLogSeq(
-                    course_id=course_id,
-                    activity_name=activity_name,
-                    activity_id=activity_id,
-                    user_id=user_id,
-                    key=key,
-                    next_id=0,
-                )
-            entry_id: int = seq.next_id
-            seq.next_id = entry_id + 1
-            session.add(seq)
             log_entry = FieldLogEntry(
                 course_id=course_id,
                 activity_name=activity_name,
                 activity_id=activity_id,
                 user_id=user_id,
                 key=key,
-                entry_id=entry_id,
                 value=json.dumps(value),
             )
             session.add(log_entry)
             session.commit()
-            return entry_id
+            session.refresh(log_entry)
+            assert log_entry.id is not None
+            return log_entry.id
 
     def log_delete(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
@@ -291,7 +270,7 @@ class SQLiteFieldStore(FieldStore):
                 activity_id,
                 user_id,
                 key,
-            ).where(col(FieldLogEntry.entry_id) == entry_id)
+            ).where(col(FieldLogEntry.id) == entry_id)
             entry = session.exec(stmt).first()
             if entry is None:
                 return False
@@ -299,15 +278,14 @@ class SQLiteFieldStore(FieldStore):
             session.commit()
             return True
 
-    def log_delete_range(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def log_delete_before(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        before_id: int,
     ) -> int:
         with db.session_scope() as session:
             stmt = _key_filter(
@@ -318,9 +296,32 @@ class SQLiteFieldStore(FieldStore):
                 activity_id,
                 user_id,
                 key,
-            ).where(
-                col(FieldLogEntry.entry_id) >= from_id,
-                col(FieldLogEntry.entry_id) < to_id,
+            ).where(col(FieldLogEntry.id) < before_id)
+            entries = session.exec(stmt).all()
+            count = len(entries)
+            for entry in entries:
+                session.delete(entry)
+            if count > 0:
+                session.commit()
+            return count
+
+    def log_clear(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
+    ) -> int:
+        with db.session_scope() as session:
+            stmt = _key_filter(
+                select(FieldLogEntry),
+                FieldLogEntry,
+                course_id,
+                activity_name,
+                activity_id,
+                user_id,
+                key,
             )
             entries = session.exec(stmt).all()
             count = len(entries)
@@ -338,7 +339,7 @@ def delete_fields_by(
 ) -> None:
     """Delete all field data for a given course/activity type/id."""
     with db.session_scope() as session:
-        for model in (FieldEntry, FieldLogEntry, FieldLogSeq):
+        for model in (FieldEntry, FieldLogEntry):
             select_filter = select(model)
             if course_id:
                 select_filter = select_filter.where(col(model.course_id) == course_id)
@@ -365,7 +366,7 @@ from pxc.notebook.models import CourseActivity, PageActivity
 
 def _on_activity_delete(_mapper: Any, connection: Any, target: Any) -> None:
     """Remove field store entries when an activity row is deleted."""
-    for model in (FieldEntry, FieldLogEntry, FieldLogSeq):
+    for model in (FieldEntry, FieldLogEntry):
         connection.execute(sa_delete(model).where(col(model.activity_id) == target.id))
 
 

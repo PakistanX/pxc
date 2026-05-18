@@ -255,7 +255,7 @@ Host functions are grouped into one WIT interface per functional area (see [Host
 import {
   sendEvent,
   getField, setField,
-  logAppend, logGet, logGetRange, logDelete, logDeleteRange,
+  logAppend, logGet, logGetAfter, logGetBefore, logDelete, logDeleteBefore, logClear,
   getUsernames,
 } from "pxc:sandbox/state";
 
@@ -279,12 +279,15 @@ setField("correct_answers", JSON.stringify(score + 1));
 const question = JSON.parse(getField("question"));
 setField("question", JSON.stringify("What is 2+2?"));
 
-// Log field operations (append-only ordered data)
+// Log field operations (append-only ordered data; ids are strictly increasing but may be sparse)
 const id = logAppend("messages", JSON.stringify({ user: "alice", text: "hello" }));
-const entry = JSON.parse(logGet("messages", id));       // { user: "alice", text: "hello" }
-const all = JSON.parse(logGetRange("messages", 0, 100)); // [{ id: 0, value: {...} }, ...]
-logDelete("messages", id);                               // true
-logDeleteRange("messages", 0, 50);                       // returns count deleted
+const entry = JSON.parse(logGet("messages", id));               // { user: "alice", text: "hello" }
+const first = JSON.parse(logGetAfter("messages", null, 100));   // first 100, ascending — [{ id, value }, ...]
+const latest = JSON.parse(logGetBefore("messages", null, 100)); // last 100, newest first
+const next = JSON.parse(logGetAfter("messages", cursor, 100));  // page forward from a cursor (exclusive)
+logDelete("messages", id);                                       // true
+logDeleteBefore("messages", cutoff);                             // retention prune; returns count deleted
+logClear("messages");                                            // delete every entry; returns count deleted
 
 // Storage operations (name + path + optional context, where name is declared in manifest capabilities)
 storageWrite("media", "photo.png", imageBytes, null);           // write a file (Uint8Array)
@@ -379,7 +382,7 @@ The host surface is split into one WIT interface per functional area, defined in
 
 | Interface | Gating | Functions |
 |---|---|---|
-| `state` | Always available | `sendEvent`, `getField`, `setField`, `logGet`, `logGetRange`, `logAppend`, `logDelete`, `logDeleteRange`, `getUsernames` |
+| `state` | Always available | `sendEvent`, `getField`, `setField`, `logGet`, `logGetAfter`, `logGetBefore`, `logAppend`, `logDelete`, `logDeleteBefore`, `logClear`, `getUsernames` |
 | `grading` | `capabilities.grading: {}` | `submitGrade`, `reportCompleted`, `reportPassed`, `reportFailed`, `reportProgressed`, `reportScored` |
 | `http` | `capabilities.http` | `httpRequest` |
 | `storage` | `capabilities.storage` | `storageRead`, `storageWrite`, `storageExists`, `storageUrl`, `storageList`, `storageDelete` |
@@ -390,11 +393,13 @@ Downstream apps may register additional interfaces (e.g. the notebook app regist
 
 - `sendEvent(name: str, value: str, context: str, permission: str)`: `context` is a JSON-encoded dict controlling broadcast audience (e.g. `'{"activity_id": "..."}'` or `'{}'` for defaults). `permission` is the minimum permission level to receive the event (`"view"`, `"play"`, or `"edit"`)
 - `getField(name: str, context: str)` / `setField(name: str, value: str, context: str)`: scope resolved from manifest; the `context` parameter is a JSON-encoded dict of dimension overrides, with the following optional keys: `user_id`, `course_id`, `activity_id`. E.g. `{"user_id": "bob"}`. Pass `{}` for default behavior. Raises `FieldValidationError` on `log` fields — use the log functions below instead
-- `logAppend(name: str, value: any, context: str) -> int`: append to a log field, returns the assigned entry ID
+- `logAppend(name: str, value: any, context: str) -> int`: append to a log field, returns the assigned entry ID. IDs are strictly increasing but may be sparse — treat the return value as an opaque cursor.
 - `logGet(name: str, entry_id: int, context: str) -> any | null`: get a single log entry by ID
-- `logGetRange(name: str, from_id: int, to_id: int, context: str) -> [{id, value}, ...]`: get entries in range `[from_id, to_id)`
+- `logGetAfter(name: str, after_id: int | null, count: int, context: str) -> [{id, value}, ...]`: get up to `count` entries with `id > after_id`, ascending. `after_id=null` starts from the oldest entry. Race-safe when anchored: future appends don't change earlier results.
+- `logGetBefore(name: str, before_id: int | null, count: int, context: str) -> [{id, value}, ...]`: get up to `count` entries with `id < before_id`, descending (newest first). `before_id=null` returns the latest entries; that form is a snapshot — pass the returned id as a cursor for stable pagination.
 - `logDelete(name: str, entry_id: int, context: str) -> bool`: delete a single entry, returns whether it existed
-- `logDeleteRange(name: str, from_id: int, to_id: int, context: str) -> int`: delete entries in range, returns count deleted
+- `logDeleteBefore(name: str, before_id: int, context: str) -> int`: delete all entries with `id < before_id` (retention prune). Returns count deleted.
+- `logClear(name: str, context: str) -> int`: delete every entry in the log. Returns count deleted.
 - `getUsernames(ids: list<str>) -> [[id, name], ...]`: resolve user IDs to display names. Returns `[id, name]` pairs for known IDs only (unknown IDs are omitted). The resolver is provided by the host app; in the notebook it maps to the email prefix, in LTI it maps the launching user's name from the JWT claims.
 
 **`grading` (requires `capabilities.grading: {}`)** — used to track learner progress (inspired by xAPI/cmi5 verbs):
@@ -423,7 +428,7 @@ The base `ActivityRuntime` logs report statements to stdout. Platform implementa
 
 #### Log fields
 
-The `log` type provides append-only ordered storage with auto-incrementing IDs, suitable for chat messages, event histories, and similar use cases. Unlike other field types, log fields are not accessible via `getField`/`setField` and are not included in `get_all_fields` — they have dedicated host functions (`logAppend`, `log_get`, `logGetRange`, `logDelete`, `logDeleteRange`).
+The `log` type provides append-only ordered storage with strictly increasing entry IDs (possibly sparse), suitable for chat messages, event histories, and similar use cases. Unlike other field types, log fields are not accessible via `getField`/`setField` and are not included in `get_all_fields` — they have dedicated host functions (`logAppend`, `logGet`, `logGetAfter`, `logGetBefore`, `logDelete`, `logDeleteBefore`, `logClear`).
 
 Log fields cannot be nested: the `items` type schema uses the same types as other fields (`integer`, `number`, `string`, `boolean`, `array`, `object`) but not `log`.
 

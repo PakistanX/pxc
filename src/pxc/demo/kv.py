@@ -82,19 +82,31 @@ class KVStore(MemoryKVStore):
             self._save()
         return deleted
 
-    def log_delete_range(
+    def log_delete_before(
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        before_id: int,
     ) -> int:
-        count = super().log_delete_range(
-            course_id, activity_name, activity_id, user_id, key, from_id, to_id
+        count = super().log_delete_before(
+            course_id, activity_name, activity_id, user_id, key, before_id
         )
+        if count > 0:
+            self._save()
+        return count
+
+    def log_clear(
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
+    ) -> int:
+        count = super().log_clear(course_id, activity_name, activity_id, user_id, key)
         if count > 0:
             self._save()
         return count

@@ -11,7 +11,7 @@ import {
   setField,
   sendEvent,
   logAppend,
-  logGetRange,
+  logGetBefore,
   logDelete,
   getUsernames,
 } from "pxc:sandbox/state";
@@ -55,7 +55,7 @@ function broadcastGameState() {
 }
 
 function broadcastRecords() {
-  const records = JSON.parse(logGetRange("records", 0, 1000));
+  const records = JSON.parse(logGetBefore("records", null, 1000));
   sendEvent(
     "records.changed",
     JSON.stringify({
@@ -219,7 +219,7 @@ export function onAction(name, data, context, permission) {
 export function getState(context, permission) {
   const white = JSON.parse(getField("white"));
   const black = JSON.parse(getField("black"));
-  const records = JSON.parse(logGetRange("records", 0, 1000));
+  const records = JSON.parse(logGetBefore("records", null, 1000));
   const ids = [white, black, ...collectRecordIds(records)];
   const state = {
     fen: JSON.parse(getField("fen")),

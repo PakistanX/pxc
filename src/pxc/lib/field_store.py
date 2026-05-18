@@ -57,15 +57,27 @@ class FieldStore(ABC):
     ) -> FieldType | None: ...
 
     @abstractmethod
-    def log_get_range(
+    def log_get_after(
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        after_id: int | None,
+        count: int,
+    ) -> list[dict[str, Any]]: ...
+
+    @abstractmethod
+    def log_get_before(
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
+        before_id: int | None,
+        count: int,
     ) -> list[dict[str, Any]]: ...
 
     @abstractmethod
@@ -91,15 +103,24 @@ class FieldStore(ABC):
     ) -> bool: ...
 
     @abstractmethod
-    def log_delete_range(
+    def log_delete_before(
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        before_id: int,
+    ) -> int: ...
+
+    @abstractmethod
+    def log_clear(
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
     ) -> int: ...
 
 
@@ -197,25 +218,46 @@ class MemoryKVStore(FieldStore):
         value: FieldType | None = data["entries"].get(str(entry_id))
         return value
 
-    def log_get_range(
+    def _sorted_ids(self, data: dict[str, Any]) -> list[int]:
+        return sorted(int(k) for k in data["entries"].keys())
+
+    def log_get_after(
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        after_id: int | None,
+        count: int,
     ) -> list[dict[str, Any]]:
         data = self._log_data(
             self._log_key(course_id, activity_name, activity_id, user_id, key)
         )
-        result: list[dict[str, Any]] = []
-        for i in range(from_id, to_id):
-            k = str(i)
-            if k in data["entries"]:
-                result.append({"id": i, "value": data["entries"][k]})
-        return result
+        ids = self._sorted_ids(data)
+        if after_id is not None:
+            ids = [i for i in ids if i > after_id]
+        return [{"id": i, "value": data["entries"][str(i)]} for i in ids[:count]]
+
+    def log_get_before(
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
+        before_id: int | None,
+        count: int,
+    ) -> list[dict[str, Any]]:
+        data = self._log_data(
+            self._log_key(course_id, activity_name, activity_id, user_id, key)
+        )
+        ids = self._sorted_ids(data)
+        if before_id is not None:
+            ids = [i for i in ids if i < before_id]
+        return [
+            {"id": i, "value": data["entries"][str(i)]} for i in reversed(ids[-count:])
+        ]
 
     def log_append(
         self,
@@ -252,24 +294,37 @@ class MemoryKVStore(FieldStore):
         self._data[lk] = data
         return True
 
-    def log_delete_range(
+    def log_delete_before(
         self,
         course_id: str,
         activity_name: str,
         activity_id: str,
         user_id: str,
         key: str,
-        from_id: int,
-        to_id: int,
+        before_id: int,
     ) -> int:
         lk = self._log_key(course_id, activity_name, activity_id, user_id, key)
         data = self._log_data(lk)
-        count = 0
-        for i in range(from_id, to_id):
-            k = str(i)
-            if k in data["entries"]:
-                del data["entries"][k]
-                count += 1
-        if count > 0:
+        victims = [i for i in self._sorted_ids(data) if i < before_id]
+        for i in victims:
+            del data["entries"][str(i)]
+        if victims:
             self._data[lk] = data
+        return len(victims)
+
+    def log_clear(
+        self,
+        course_id: str,
+        activity_name: str,
+        activity_id: str,
+        user_id: str,
+        key: str,
+    ) -> int:
+        lk = self._log_key(course_id, activity_name, activity_id, user_id, key)
+        data = self._log_data(lk)
+        count = len(data["entries"])
+        if count == 0:
+            return 0
+        data["entries"] = {}
+        self._data[lk] = data
         return count

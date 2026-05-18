@@ -3,7 +3,7 @@
 // Actions handled:
 // - chat.post: Append a message and broadcast it
 
-import { getUsernames, logAppend, logGetRange, sendEvent } from "pxc:sandbox/state";
+import { getUsernames, logAppend, logGetBefore, sendEvent } from "pxc:sandbox/state";
 
 function resolveNames(ids) {
   return Object.fromEntries(getUsernames([...new Set(ids)]));
@@ -28,7 +28,9 @@ export function onAction(name, data, context, permission) {
 }
 
 export function getState() {
-  const messages = JSON.parse(logGetRange("messages", 0, 1000));
+  // Fetch the latest 1000 messages newest-first, then reverse so the UI
+  // renders oldest-at-top and auto-scrolls to the newest at the bottom.
+  const messages = JSON.parse(logGetBefore("messages", null, 1000)).reverse();
   const names = resolveNames(messages.map((m) => m.value.user));
   for (const m of messages) {
     m.value.username = names[m.value.user] || m.value.user;
