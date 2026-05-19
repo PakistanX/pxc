@@ -9,7 +9,8 @@ from sqlmodel import col, select
 from pxc.lib.file_storage import LocalFileStorage
 from pxc.lib.permission import Permission
 from pxc.lib.manifest_types import Scope
-from pxc.lib.runtime import ActivityRuntime
+from pxc.lib.runtime import ActivityRuntime, SandboxContext
+from pxc.lib.signing import make_token
 from pxc.notebook import constants, db
 from pxc.notebook.field_store import SQLiteFieldStore
 from pxc.notebook.models import ActivityStatement, User
@@ -42,12 +43,26 @@ class NotebookActivityRuntime(ActivityRuntime):
             user_id,
             permission,
         )
+        self._pxc_token = make_token(
+            activity_id=activity_id,
+            course_id=course_id,
+            user_id=user_id,
+            permission=permission.value,
+        )
 
     def host_functions(self) -> dict[str, dict[str, Callable[..., Any]]]:
         interfaces = super().host_functions()
         if self._is_course_activity:
             interfaces["analytics"] = {"report-query": self.report_query}
         return interfaces
+
+    def storage_url(
+        self, name: str, path: str, context: SandboxContext | None = None
+    ) -> str:
+        """Prefix the base URL with /_pxc/t/{token} so storage is reachable
+        from the null-origin sandboxed iframe that hosts the activity UI.
+        """
+        return f"/_pxc/t/{self._pxc_token}{super().storage_url(name, path, context)}"
 
     def get_usernames(self, ids: list[str]) -> list[tuple[str, str]]:
         with db.session_scope() as session:

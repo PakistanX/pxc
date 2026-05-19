@@ -59,7 +59,6 @@ export class PXC extends HTMLElement {
 
     this._wsUrl = this.getAttribute("data-ws-url");
     this._assetBaseUrl = this.getAttribute("data-asset-base-url");
-    this._storageBaseUrl = this.getAttribute("data-storage-base-url");
     this._pxcToken = this.getAttribute("data-pxc-token");
 
     const stateAttr = this.getAttribute("data-state");
@@ -138,20 +137,14 @@ export class PXC extends HTMLElement {
   _sendIframeInit() {
     if (!this._iframe) return;
     const token = this._pxcToken;
-    let assetBaseUrl, storageBaseUrl, uiSrc;
+    let assetBaseUrl, uiSrc;
     if (token) {
       const id = this.context.activity_id;
       assetBaseUrl = `${window.location.origin}/_pxc/t/${token}/a/${id}`;
-      storageBaseUrl = `${window.location.origin}/_pxc/t/${token}/activity/${id}/storage`;
       uiSrc = `${assetBaseUrl}/ui.js`;
     } else {
       assetBaseUrl = new URL(
         this._assetBaseUrl || `/a/${this.context.activity_id}`,
-        window.location.href,
-      ).href;
-      storageBaseUrl = new URL(
-        this._storageBaseUrl ||
-          `/activity/${this.context.activity_id}/storage`,
         window.location.href,
       ).href;
       uiSrc = this.getAttribute("data-src");
@@ -164,7 +157,6 @@ export class PXC extends HTMLElement {
         permission: this.permission,
         uiSrc,
         assetBaseUrl,
-        storageBaseUrl,
       },
       "*",
     );

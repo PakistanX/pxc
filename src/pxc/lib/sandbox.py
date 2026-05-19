@@ -110,7 +110,10 @@ class SandboxComponentExecutor(SandboxExecutor):
         """
         Call an exported function on the WASM component.
         """
-        store, instance = self._create_store_instance()
+        try:
+            store, instance = self._create_store_instance()
+        except wasmtime.WasmtimeError as e:
+            raise SandboxRuntimeError(f"Component {self._plugin_path}: failed to create instance") from e
         func = instance.get_func(store, function_name)
         if func is None:
             raise SandboxRuntimeError(

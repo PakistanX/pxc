@@ -184,7 +184,7 @@ The canonical WIT lives in `src/pxc/lib/sandbox/pxc.wit`. It defines `types` plu
 
 | Interface | Gating | Functions |
 |---|---|---|
-| `state` | Always wired | `send-event`, `get-field`, `set-field`, `log-get`, `log-get-range`, `log-append`, `log-delete`, `log-delete-range` |
+| `state` | Always wired | `send-event`, `get-field`, `set-field`, `log-get`, `log-get-before`, `log-get-after`, `log-append`, `log-delete`, `log-delete-before` |
 | `grading` | `capabilities.grading: {}` | `submit-grade`, `report-completed`, `report-passed`, `report-failed`, `report-progressed`, `report-scored` |
 | `http` | `capabilities.http` | `http-request` |
 | `storage` | `capabilities.storage` | `storage-read`, `storage-exists`, `storage-url`, `storage-list`, `storage-write`, `storage-delete` |

@@ -291,10 +291,20 @@ async def storage_file_token(
     storage_name: str,
     file_path: str,
     session: Session = Depends(get_session),
+    activity_id_override: str | None = Query(None, alias="activity_id"),
+    course_id_override: str | None = Query(None, alias="course_id"),
+    user_id_override: str | None = Query(None, alias="user_id"),
 ) -> Response:
     ctx = _load_from_pxc_token(token, activity_id, session)
+    context: SandboxContext | None = None
+    if activity_id_override or course_id_override or user_id_override:
+        context = {
+            "activity-id": activity_id_override,
+            "course-id": course_id_override,
+            "user-id": user_id_override,
+        }
     try:
-        content = ctx.storage_read(storage_name, file_path, None)
+        content = ctx.storage_read(storage_name, file_path, context)
     except CapabilityError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except FileStorageError as e:
