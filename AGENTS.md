@@ -122,7 +122,7 @@ Key methods:
 - `get_all_fields() -> dict` — loads all non-log fields with scope resolution
 - `load_field()` / `store_field()` — single field get/set with validation
 - `get_asset_path(path) -> Path` — validates and resolves asset paths
-- Host functions: `get_field`, `set_field`, `send_event`, `log_*`, `storage_*`, `http_request`, `submit_grade`
+- Host functions: `get_field`, `set_field`, `send_event`, `log_*`, `storage_*`, `http_request`
 
 **Scope resolution**: `_scope_key_segments(scope, context)` maps field scope + optional context overrides to `(activity_id, course_id, user_id)` tuple. KV key pattern: `pxc.<activity_name>.<course_id>.<activity_id>.<user_id>.<key>`.
 
@@ -185,7 +185,7 @@ The canonical WIT lives in `src/pxc/lib/sandbox/pxc.wit`. It defines `types` plu
 | Interface | Gating | Functions |
 |---|---|---|
 | `state` | Always wired | `send-event`, `get-field`, `set-field`, `log-get`, `log-get-before`, `log-get-after`, `log-append`, `log-delete`, `log-delete-before` |
-| `grading` | `capabilities.grading: {}` | `submit-grade`, `report-completed`, `report-passed`, `report-failed`, `report-progressed`, `report-scored` |
+| `grading` | `capabilities.grading: {}` | `report-completed`, `report-passed`, `report-failed`, `report-progressed`, `report-scored` |
 | `http` | `capabilities.http` | `http-request` |
 | `storage` | `capabilities.storage` | `storage-read`, `storage-exists`, `storage-url`, `storage-list`, `storage-write`, `storage-delete` |
 | `analytics` | notebook-only (`capabilities.analytics: {}`) | `report-query` |
@@ -205,7 +205,7 @@ world activity {
 }
 ```
 
-Corresponding sandbox imports in JS: `import { getField } from "pxc:sandbox/state"`, `import { submitGrade } from "pxc:sandbox/grading"`, etc.
+Corresponding sandbox imports in JS: `import { getField } from "pxc:sandbox/state"`, `import { report-scored } from "pxc:sandbox/grading"`, etc.
 
 **Critical**: all values cross the WASM boundary as JSON strings. Host functions in `runtime.py` do `json.dumps()`/`json.loads()` at the boundary.
 

@@ -129,7 +129,6 @@ class TestHostFunctions:
             "report-passed",
             "report-progressed",
             "report-scored",
-            "submit-grade",
         ]
 
     def test_http_interface_when_declared(self, tmp_path: Path) -> None:

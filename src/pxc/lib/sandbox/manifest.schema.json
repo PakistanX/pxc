@@ -45,7 +45,7 @@
           }
         },
         "grading": {
-          "description": "Grading/reporting capability. Empty object marker — declares the sandbox imports the grading interface (submit-grade, report-*).",
+          "description": "Grading/reporting capability. Empty object marker — declares the sandbox imports the grading interface.",
           "type": "object",
           "additionalProperties": false
         }

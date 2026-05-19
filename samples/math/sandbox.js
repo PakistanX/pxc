@@ -1,6 +1,6 @@
 // Math quiz plugin - validates answers and submits grades via WASM backend
 
-import { reportScored, submitGrade } from "pxc:sandbox/grading";
+import { reportScored } from "pxc:sandbox/grading";
 import { getField, sendEvent, setField } from "pxc:sandbox/state";
 
 // Return state visible to the current user.
@@ -85,10 +85,5 @@ function checkAnswer(question, answer) {
     feedback = "Error evaluating answer.";
   }
 
-  const score = correct ? 100 : 0;
-
-  // Submit grade to LMS via host function
-  submitGrade(score);
-
-  return { correct, score, feedback };
+  return { correct, feedback };
 }

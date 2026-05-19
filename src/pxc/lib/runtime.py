@@ -194,7 +194,6 @@ class ActivityRuntime:
         }
         if self.capability_checker.is_interface_requested(InterfaceName.grading):
             interfaces[InterfaceName.grading.value] = {
-                "submit-grade": self.submit_grade,
                 "report-completed": self.report_completed,
                 "report-passed": self.report_passed,
                 "report-failed": self.report_failed,
@@ -660,11 +659,6 @@ class ActivityRuntime:
                     "body": str(e.reason),
                 }
             )
-
-    def submit_grade(self, score: float) -> bool:
-        # TODO actually submit grade
-        logger.info("submitted score: %f", score)
-        return True
 
     # ── Report host functions ──────────────────────────────────────────
 

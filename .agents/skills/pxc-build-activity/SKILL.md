@@ -63,7 +63,7 @@ In all cases:
     "event.name": { <typeSchema> }
   },
   "capabilities": {                  // optional: host interfaces the sandbox imports
-    "grading": {},                   // enables pxc:sandbox/grading (submitGrade, report-*)
+    "grading": {},                   // enables pxc:sandbox/grading
     "http": { "allowed_hosts": ["example.com"] },   // enables pxc:sandbox/http
     "storage": { "media": { "scope": "activity" } } // enables pxc:sandbox/storage
   },
@@ -136,7 +136,7 @@ import { getField, setField, sendEvent } from "pxc:sandbox/state";
 // import { logAppend, logGet, logGetAfter, logGetBefore, logDelete, logDeleteBefore, logClear } from "pxc:sandbox/state";
 
 // Opt-in: declare capabilities.grading: {} in manifest.json
-// import { submitGrade, reportCompleted, reportPassed, reportFailed, reportProgressed, reportScored } from "pxc:sandbox/grading";
+// import { reportCompleted, reportPassed, reportFailed, reportProgressed, reportScored } from "pxc:sandbox/grading";
 
 // Opt-in: declare capabilities.http in manifest.json
 // import { httpRequest } from "pxc:sandbox/http";
@@ -187,7 +187,6 @@ Each capability declared in `manifest.json` unlocks a matching WIT interface und
 
 ## `pxc:sandbox/grading` (requires `capabilities.grading: {}`)
 
-- `submitGrade(score)` → bool. `score` is 0.0 to 1.0.
 - `reportCompleted()` → bool
 - `reportPassed(scoreOrNull)` → bool. Pass `null` if no score.
 - `reportFailed(scoreOrNull)` → bool
@@ -420,7 +419,7 @@ export function setup(activity) {
 For more complex patterns (file uploads, HTTP requests, log fields, real-time collaboration), look at sample activities if you are inside the pxc repo:
 - `samples/chat/` — log fields, real-time events
 - `samples/image/` — file upload with storage capability
-- `samples/math/` — grading interface (submitGrade, reportScored)
+- `samples/math/` — grading interface (reportScored)
 - `samples/zoom/` — HTTP requests with OAuth (http interface)
 - `samples/collab-editor/` — npm bundling with Yjs + CodeMirror
 - `samples/python/` — Pyodide runtime with asset loading

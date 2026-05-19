@@ -84,7 +84,7 @@ class Capabilities(BaseModel):
     grading: Annotated[
         dict[str, Any] | None,
         Field(
-            description="Grading/reporting capability. Empty object marker — declares the sandbox imports the grading interface (submit-grade, report-*)."
+            description="Grading/reporting capability. Empty object marker — declares the sandbox imports the grading interface."
         ),
     ] = None
 

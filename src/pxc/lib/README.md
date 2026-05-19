@@ -260,7 +260,7 @@ import {
 } from "pxc:sandbox/state";
 
 // Opt-in: declare the matching capability in manifest.json
-import { submitGrade, reportCompleted, reportPassed, reportFailed, reportProgressed, reportScored } from "pxc:sandbox/grading";
+import { reportCompleted, reportPassed, reportFailed, reportProgressed, reportScored } from "pxc:sandbox/grading";
 import { httpRequest } from "pxc:sandbox/http";
 import { storageRead, storageWrite, storageExists, storageUrl, storageList, storageDelete } from "pxc:sandbox/storage";
 
@@ -383,7 +383,7 @@ The host surface is split into one WIT interface per functional area, defined in
 | Interface | Gating | Functions |
 |---|---|---|
 | `state` | Always available | `sendEvent`, `getField`, `setField`, `logGet`, `logGetAfter`, `logGetBefore`, `logAppend`, `logDelete`, `logDeleteBefore`, `logClear`, `getUsernames` |
-| `grading` | `capabilities.grading: {}` | `submitGrade`, `reportCompleted`, `reportPassed`, `reportFailed`, `reportProgressed`, `reportScored` |
+| `grading` | `capabilities.grading: {}` | `reportCompleted`, `reportPassed`, `reportFailed`, `reportProgressed`, `reportScored` |
 | `http` | `capabilities.http` | `httpRequest` |
 | `storage` | `capabilities.storage` | `storageRead`, `storageWrite`, `storageExists`, `storageUrl`, `storageList`, `storageDelete` |
 
@@ -404,7 +404,6 @@ Downstream apps may register additional interfaces (e.g. the notebook app regist
 
 **`grading` (requires `capabilities.grading: {}`)** — used to track learner progress (inspired by xAPI/cmi5 verbs):
 
-- `submitGrade(score: float) -> bool`: submit a final grade.
 - `reportCompleted() -> bool`: the learner completed the activity.
 - `reportPassed(score: option<f64>) -> bool`: the learner passed. `score` is optional, in the range [0.0, 1.0].
 - `reportFailed(score: option<f64>) -> bool`: the learner failed. `score` is optional, in the range [0.0, 1.0].

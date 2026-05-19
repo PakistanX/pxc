@@ -46,7 +46,6 @@ interface state {
 
 // Opt-in via `capabilities.grading: {}`.
 interface grading {
-    submit-grade: func(score: f64) -> bool;
     report-completed: func() -> bool;
     report-passed: func(score: option<f64>) -> bool;
     report-failed: func(score: option<f64>) -> bool;
