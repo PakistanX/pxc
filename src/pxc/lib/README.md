@@ -414,7 +414,7 @@ The base `ActivityRuntime` logs report statements to stdout. Platform implementa
 
 **`http` (requires `capabilities.http`):**
 
-- `httpRequest(url: str, method: str, body: str, headers: str)` → `{"status": int, "headers": [[k,v],...], "body": str}` (headers is a JSON-encoded list of `[key, value]` pairs).
+- `httpRequest(url: str, method: str, body: str, headers: list[tuple[str, str]])` → `{"status": int, "headers": [[k,v],...], "body": str}` (headers is a JSON-encoded list of `[key, value]` pairs).
 
 **`storage` (requires `capabilities.storage`)** — each function takes the storage `name`, a relative `path`, and an optional `context` (pass `null` to use the current context):
 

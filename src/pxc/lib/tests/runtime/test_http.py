@@ -14,7 +14,7 @@ class TestHttpRequest:
         manifest = create_manifest(capabilities={})
         ctx = make_activity_runtime(tmp_path, manifest)
 
-        result = ctx.http_request("https://example.com", "GET", "", "[]")
+        result = ctx.http_request("https://example.com", "GET", "", [])
 
         data = json.loads(result)
         assert data["status"] == 0
@@ -31,7 +31,7 @@ class TestHttpRequest:
         )
         ctx = make_activity_runtime(tmp_path, manifest)
 
-        result = ctx.http_request("https://evil.com/hack", "GET", "", "[]")
+        result = ctx.http_request("https://evil.com/hack", "GET", "", [])
 
         data = json.loads(result)
         assert data["status"] == 0
@@ -61,7 +61,7 @@ class TestHttpRequest:
             "https://api.example.com/data",
             "POST",
             "body",
-            '[["Content-Type", "application/json"]]',
+            [("Content-Type", "application/json")],
         )
 
         data = json.loads(result)
@@ -84,7 +84,7 @@ class TestHttpRequest:
         error.read = MagicMock(return_value=b"not found")  # type: ignore[method-assign]
         mock_urlopen.side_effect = error
 
-        result = ctx.http_request("https://example.com", "GET", "", "[]")
+        result = ctx.http_request("https://example.com", "GET", "", [])
 
         data = json.loads(result)
         assert data["status"] == 404
@@ -100,7 +100,7 @@ class TestHttpRequest:
 
         mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
 
-        result = ctx.http_request("https://example.com", "GET", "", "[]")
+        result = ctx.http_request("https://example.com", "GET", "", [])
 
         data = json.loads(result)
         assert data["status"] == 0

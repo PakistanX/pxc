@@ -25,7 +25,7 @@ interface state {
 
 // Opt-in via `capabilities.http`.
 interface http {
-    http-request: func(url: string, method: string, body: string, headers: string) -> string;
+    http-request: func(url: string, method: string, body: string, headers: list<tuple<string, string>>) -> string;
 }
 
 world activity {

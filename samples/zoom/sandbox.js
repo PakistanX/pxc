@@ -21,7 +21,7 @@ function getZoomToken() {
     ["Content-Type", "application/x-www-form-urlencoded"],
   ];
 
-  const response = JSON.parse(httpRequest("https://zoom.us/oauth/token", "POST", body, JSON.stringify(headers)));
+  const response = JSON.parse(httpRequest("https://zoom.us/oauth/token", "POST", body, headers));
   if (response.status !== 200) {
     throw new Error("Zoom OAuth failed (HTTP " + response.status + "): " + response.body);
   }
@@ -117,7 +117,6 @@ function handleMeetingSave(value, permission) {
     ["Authorization", "Bearer " + token],
     ["Content-Type", "application/json"],
   ];
-  const headersStr = JSON.stringify(headers);
 
   const existingMeetingId = JSON.parse(getField("meeting_id"));
   let response;
@@ -127,7 +126,7 @@ function handleMeetingSave(value, permission) {
       "https://api.zoom.us/v2/meetings/" + existingMeetingId,
       "PATCH",
       meetingBody,
-      headersStr
+      headers
     ));
     if (response.status !== 204) {
       console.log("Zoom API error (PATCH): HTTP " + response.status + " " + response.body);
@@ -138,7 +137,7 @@ function handleMeetingSave(value, permission) {
       "https://api.zoom.us/v2/meetings/" + existingMeetingId,
       "GET",
       "",
-      headersStr
+      headers
     ));
   } else {
     // Create new meeting
@@ -146,7 +145,7 @@ function handleMeetingSave(value, permission) {
       "https://api.zoom.us/v2/users/me/meetings",
       "POST",
       meetingBody,
-      headersStr
+      headers
     ));
   }
 

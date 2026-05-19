@@ -72,10 +72,10 @@ function postToDiscord(message) {
   if (!url) return;
 
   const body = JSON.stringify({ content: message });
-  const headers = JSON.stringify([
+  const headers = [
     ["Content-Type", "application/json"],
     ["User-Agent", "Application"],
-  ]);
+  ];
 
   try {
     const response = JSON.parse(httpRequest(url, "POST", body, headers));

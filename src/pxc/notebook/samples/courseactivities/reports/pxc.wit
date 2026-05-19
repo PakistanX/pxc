@@ -58,7 +58,7 @@ interface analytics {
 
 // Opt-in via `capabilities.http`.
 interface http {
-    http-request: func(url: string, method: string, body: string, headers: string) -> string;
+    http-request: func(url: string, method: string, body: string, headers: list<tuple<string, string>>) -> string;
 }
 
 // Opt-in via `capabilities.storage`.

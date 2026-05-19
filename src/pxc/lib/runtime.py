@@ -598,7 +598,9 @@ class ActivityRuntime:
             course_id, self.name, activity_id, user_id, name
         )
 
-    def http_request(self, url: str, method: str, body: str, headers: str) -> str:
+    def http_request(
+        self, url: str, method: str, body: str, headers: list[tuple[str, str]]
+    ) -> str:
         """Make an HTTP request.
 
         Returns a JSON string: {"status": int, "headers": [[k,v],...], "body": str}
@@ -613,13 +615,12 @@ class ActivityRuntime:
         except CapabilityError as e:
             return json.dumps({"status": 0, "headers": [], "body": str(e)})
 
-        parsed_headers: list[list[str]] = json.loads(headers)
         body_bytes = body.encode("utf-8") if body else None
 
         req = urllib.request.Request(
             url,
             data=body_bytes,
-            headers=dict(parsed_headers),
+            headers=dict(headers),
             method=method,
         )
 
