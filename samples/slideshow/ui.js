@@ -18,7 +18,15 @@ function buildSrcdoc(slidesHtml, assetUrls) {
   <link rel="stylesheet" href="${assetUrls.resetCss}">
   <link rel="stylesheet" href="${assetUrls.revealCss}">
   <link rel="stylesheet" href="${assetUrls.themeCss}">
-  <style>body { margin: 0; }</style>
+  <style>
+    :root {
+      --r-heading-font: Montserrat;
+      --r-heading-text-transform: none;
+      --r-heading-font-weight: normal;
+      --r-main-font: "Open Sans";
+    }
+    body { margin: 0; }
+  </style>
 </head>
 <body>
   <div class="reveal"><div class="slides">${slidesHtml}</div></div>
@@ -27,6 +35,8 @@ function buildSrcdoc(slidesHtml, assetUrls) {
     let deck = new Reveal(document.querySelector('.reveal'), {
       keyboardCondition: 'focused',
       transition: 'fade',
+      progress: false,
+      controls: false,
     });
     deck.initialize();
   </script>
