@@ -1,6 +1,6 @@
 # Portable, sandboXed Components (PXC)
 
-PXC ("pixie") is an upcoming standard for online learning activities. It aims at improving other standards such as [SCORM](https://en.wikipedia.org/wiki/Sharable_Content_Object_Reference_Model), [LTI](https://en.wikipedia.org/wiki/Learning_Tools_Interoperability), [H5P](https://h5p.org) or [XBlock](https://github.com/openedx/xblock).
+PXC ("pixie") is a new standard for online learning activities. It aims at improving other standards such as [SCORM](https://en.wikipedia.org/wiki/Sharable_Content_Object_Reference_Model), [LTI](https://en.wikipedia.org/wiki/Learning_Tools_Interoperability) or [H5P](https://h5p.org).
 
 As a high-level overview: the PXC standard supports running arbitrary code both on the client (for the learner UI) _and_ the server. Server code is sandboxed in WebAssembly. Activities are portable, which means that they can be transferred from one LMS to another. Activities are also secure, as unsafe PXC capabilities (such as network access) are granted by platform administrators on a case-by-case basis.
 
@@ -8,6 +8,9 @@ Offline mode is supported, with two possible options:
 
 1. Sandboxed code is shipped to the offline device (typically a mobile phone) and runs there. If the client decompiles the wasm binaries, they have access to the grading logic. This is acceptable when the client is trusted and the sandboxed code does not need network access.
 2. Communication between the frontend and the backend is performed in an event-driven architecture  (see [event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)). When offline, events are delayed until the client comes back online. Conflicts might happen and must be resolved, for instance when users attempt to connect from multiple devices.
+
+The concept of PXC was initially described by [Braden MacDonald](https://github.com/bradenmacdonald
+) in the "XBlock Next Proposals" from (2020)[https://docs.google.com/document/d/1btnE7pIZccvlrDrJ8gHjEPfOrkMCZgSkgw8D9jXaLx4/edit?tab=t.0], (2024)[https://docs.google.com/document/d/1xelb7iGvWRtT71F2c_dBkQEB47Cj0etT5VGgbVdAPKY/edit?tab=t.0], (2026)[https://docs.google.com/document/d/1p-xvUKgG5HaUE-bzew98KPfrGCEZ6wsb6cUJG_gET28/edit?tab=t.0].
 
 ## Sub-projects
 
