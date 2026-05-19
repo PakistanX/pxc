@@ -10,7 +10,17 @@ const DEFAULT_SLIDES = `<section>
   <p>Add more &lt;section&gt; elements for additional slides.</p>
 </section>`;
 
-function buildSrcdoc(slidesHtml, assetUrls) {
+const MEDIA_TOKEN_RE = /media:\/\/([A-Za-z0-9._-]+)/g;
+
+function rewriteMediaTokens(html, files) {
+  const urlByName = new Map((files || []).map((f) => [f.filename, f.url]));
+  return html.replace(MEDIA_TOKEN_RE, (match, filename) =>
+    urlByName.has(filename) ? urlByName.get(filename) : match
+  );
+}
+
+function buildSrcdoc(slidesHtml, assetUrls, files) {
+  const rewritten = rewriteMediaTokens(slidesHtml, files);
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -29,7 +39,7 @@ function buildSrcdoc(slidesHtml, assetUrls) {
   </style>
 </head>
 <body>
-  <div class="reveal"><div class="slides">${slidesHtml}</div></div>
+  <div class="reveal"><div class="slides">${rewritten}</div></div>
   <script src="${assetUrls.revealJs}"></script>
   <script>
     let deck = new Reveal(document.querySelector('.reveal'), {
@@ -58,10 +68,22 @@ export function setup(activity) {
     return activity.state.slides_html || "";
   }
 
+  function getFiles() {
+    return activity.state.files || [];
+  }
+
   activity.onEvent = (name, value) => {
     if (name === "fields.change.slides_html") {
       activity.state.slides_html = value;
       if (permission !== "edit") {
+        renderPlayView();
+      }
+    } else if (name === "files.changed") {
+      activity.state.files = value;
+      if (permission === "edit") {
+        renderFileList();
+        updatePreview(element.querySelector("#slides-input")?.value ?? getSlidesHtml());
+      } else {
         renderPlayView();
       }
     }
@@ -88,19 +110,39 @@ export function setup(activity) {
         .feedback.error { background: #f8d7da; color: #721c24; }
         .preview-label { font-weight: bold; margin-top: 1rem; }
         .slideshow-preview { margin-top: 0.5rem; }
+        .media-panel { border: 1px solid #ddd; border-radius: 4px; padding: 0.75rem; margin-bottom: 1rem; background: #fafafa; }
+        .media-panel h3 { margin-top: 0; }
+        .media-upload-status { color: #666; font-size: 0.85rem; margin-top: 0.25rem; min-height: 1em; }
+        .media-list { list-style: none; padding: 0; margin: 0.5rem 0 0 0; }
+        .media-list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; border-top: 1px solid #eee; }
+        .media-list li:first-child { border-top: none; }
+        .media-name { font-weight: 600; min-width: 12rem; }
+        .media-token { font-family: monospace; font-size: 0.85rem; background: #fff; padding: 0.1rem 0.35rem; border: 1px solid #ddd; border-radius: 3px; }
+        .media-btn { padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.8rem; }
+        .media-empty { color: #666; font-style: italic; font-size: 0.9rem; }
+        .editor-hint { color: #666; font-size: 0.8rem; margin-top: 0.25rem; }
       </style>
       <div class="slideshow-container">
+        <div class="media-panel">
+          <h3>Media files</h3>
+          <input type="file" id="media-input" multiple>
+          <div class="media-upload-status" id="media-upload-status"></div>
+          <div id="media-list-wrap"></div>
+        </div>
         <h3>Edit Slides</h3>
         <p style="color: #666; font-size: 0.85rem;">
           Each slide is a <code>&lt;section&gt;</code> element. Nest <code>&lt;section&gt;</code> elements for vertical slides.
         </p>
         <textarea class="slides-editor" id="slides-input">${escapeHtml(slidesHtml)}</textarea>
+        <div class="editor-hint">Reference uploaded files as <code>media://filename.ext</code> in your slide HTML.</div>
         <button type="button" class="save-btn" id="save-btn">Save</button>
         <div id="save-feedback"></div>
         <div class="preview-label">Preview:</div>
         <div class="slideshow-preview" id="slideshow-preview"></div>
       </div>
     `;
+
+    element.querySelector("#media-input").addEventListener("change", onMediaFilesSelected);
 
     element.querySelector("#save-btn").addEventListener("click", async () => {
       const content = element.querySelector("#slides-input").value;
@@ -114,7 +156,72 @@ export function setup(activity) {
       }
     });
 
+    renderFileList();
     updatePreview(slidesHtml);
+  }
+
+  function renderFileList() {
+    const wrap = element.querySelector("#media-list-wrap");
+    if (!wrap) return;
+    const files = getFiles();
+    if (files.length === 0) {
+      wrap.innerHTML = '<p class="media-empty">No files uploaded yet.</p>';
+      return;
+    }
+    const rows = files
+      .map(
+        (f) => `
+          <li data-filename="${escapeHtml(f.filename)}">
+            <span class="media-name">${escapeHtml(f.filename)}</span>
+            <code class="media-token">media://${escapeHtml(f.filename)}</code>
+            <button type="button" class="media-btn copy-btn">Copy</button>
+            <button type="button" class="media-btn delete-btn">Delete</button>
+          </li>`
+      )
+      .join("");
+    wrap.innerHTML = `<ul class="media-list">${rows}</ul>`;
+
+    wrap.querySelectorAll(".media-list li").forEach((li) => {
+      const filename = li.dataset.filename;
+      li.querySelector(".copy-btn").addEventListener("click", () => {
+        const text = "media://" + filename;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text);
+        }
+      });
+      li.querySelector(".delete-btn").addEventListener("click", () => {
+        activity.sendAction("file.delete", { filename });
+      });
+    });
+  }
+
+  async function onMediaFilesSelected(e) {
+    const status = element.querySelector("#media-upload-status");
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      status.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}…`;
+      try {
+        const dataUri = await readFileAsDataUrl(file);
+        await activity.sendAction("file.upload", { filename: file.name, data: dataUri });
+      } catch (err) {
+        status.textContent = `Error uploading ${file.name}: ${err.message}`;
+        e.target.value = "";
+        return;
+      }
+    }
+    status.textContent = `Uploaded ${files.length} file${files.length === 1 ? "" : "s"}.`;
+    e.target.value = "";
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("FileReader failed"));
+      reader.readAsDataURL(file);
+    });
   }
 
   function updatePreview(slidesHtml) {
@@ -125,7 +232,7 @@ export function setup(activity) {
       return;
     }
     container.innerHTML = '<iframe style="width: 100%; height: 400px; border: 1px solid #ccc;"></iframe>';
-    container.querySelector("iframe").srcdoc = buildSrcdoc(slidesHtml, assetUrls);
+    container.querySelector("iframe").srcdoc = buildSrcdoc(slidesHtml, assetUrls, getFiles());
   }
 
   function renderPlayView() {
@@ -144,7 +251,7 @@ export function setup(activity) {
     `;
 
     if (slidesHtml) {
-      element.querySelector("iframe").srcdoc = buildSrcdoc(slidesHtml, assetUrls);
+      element.querySelector("iframe").srcdoc = buildSrcdoc(slidesHtml, assetUrls, getFiles());
     }
   }
 

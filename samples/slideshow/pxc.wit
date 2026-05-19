@@ -23,9 +23,21 @@ interface state {
     set-field: func(name: string, value: string, context: option<context>) -> bool;
 }
 
+interface storage {
+    use types.{context};
+
+    storage-read: func(name: string, path: string, context: option<context>) -> list<u8>;
+    storage-exists: func(name: string, path: string, context: option<context>) -> bool;
+    storage-url: func(name: string, path: string, context: option<context>) -> string;
+    storage-list: func(name: string, path: string, context: option<context>) -> tuple<list<string>, list<string>>;
+    storage-write: func(name: string, path: string, content: list<u8>, context: option<context>) -> bool;
+    storage-delete: func(name: string, path: string, context: option<context>) -> bool;
+}
+
 world activity {
     use types.{context, permission};
     import state;
+    import storage;
     export on-action: func(name: string, value: string, context: context, permission: permission) -> string;
     export get-state: func(context: context, permission: permission) -> string;
 }

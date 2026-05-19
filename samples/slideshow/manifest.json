@@ -1,5 +1,12 @@
 {
   "name": "slideshow",
+  "capabilities": {
+    "storage": {
+      "media": {
+        "scope": "activity"
+      }
+    }
+  },
   "fields": {
     "slides_html": {
       "type": "string",
@@ -15,11 +22,34 @@
           "type": "string"
         }
       }
+    },
+    "file.upload": {
+      "type": "object",
+      "properties": {
+        "filename": { "type": "string" },
+        "data": { "type": "string" }
+      }
+    },
+    "file.delete": {
+      "type": "object",
+      "properties": {
+        "filename": { "type": "string" }
+      }
     }
   },
   "events": {
     "fields.change.slides_html": {
       "type": "string"
+    },
+    "files.changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      }
     }
   },
   "assets": [
