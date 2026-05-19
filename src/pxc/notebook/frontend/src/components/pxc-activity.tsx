@@ -7,6 +7,7 @@ type PxcActivityProps = {
   state: unknown;
   permission: string;
   pxcToken?: string;
+  trusted?: boolean;
 };
 
 declare global {
@@ -20,6 +21,7 @@ declare global {
           "data-permission"?: string;
           "data-src"?: string;
           "data-pxc-token"?: string;
+          "data-trusted"?: string;
           embed?: string;
         },
         HTMLElement
@@ -28,7 +30,7 @@ declare global {
   }
 }
 
-export function PxcActivity({ context, state, permission, pxcToken }: PxcActivityProps) {
+export function PxcActivity({ context, state, permission, pxcToken, trusted }: PxcActivityProps) {
   return (
     <pxc-activity
       data-context={JSON.stringify(context)}
@@ -36,6 +38,7 @@ export function PxcActivity({ context, state, permission, pxcToken }: PxcActivit
       data-permission={permission}
       data-src={`/a/${context.activity_id}/ui.js`}
       data-pxc-token={pxcToken}
+      data-trusted={trusted ? "1" : undefined}
       embed={pxcToken ? "native" : undefined}
     />
   );

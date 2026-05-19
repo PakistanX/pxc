@@ -109,7 +109,9 @@ export class PXC extends HTMLElement {
 
   _initIframe() {
     const iframe = document.createElement("iframe");
-    iframe.setAttribute("sandbox", "allow-scripts allow-forms");
+    if (this.getAttribute("data-trusted") !== "1") {
+      iframe.setAttribute("sandbox", "allow-scripts allow-forms");
+    }
     iframe.src = "/_pxc/iframe";
     iframe.style.cssText = "width:100%;border:none;display:block;";
     this.appendChild(iframe);

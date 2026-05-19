@@ -54,7 +54,7 @@ export const reorderCourses = (course_ids: string[]) => request<void>("/api/cour
 
 // Pages
 export type PageItem = { id: string; title: string; position: number };
-export type Activity = { id: string; page_id: string; activity_type: string; position: number; error?: string; client_path?: string; state?: unknown; permission?: string; context?: { user_id: string; course_id: string; activity_id: string }; pxc_token?: string };
+export type Activity = { id: string; page_id: string; activity_type: string; position: number; trusted?: boolean; error?: string; client_path?: string; state?: unknown; permission?: string; context?: { user_id: string; course_id: string; activity_id: string }; pxc_token?: string };
 export type PageDetail = { id: string; title: string; course_id: string; is_owner: boolean; activities: Activity[]; activity_types: string[] };
 
 export const createPage = (courseId: string, title: string) => request<PageItem>(`/api/courses/${courseId}/pages`, json({ title }));
@@ -68,6 +68,7 @@ export const createActivity = (pageId: string, activity_type: string) => request
 export const getActivity = (id: string, permission: string) => request<Activity>(`/api/activities/${id}/${permission}`);
 export const deleteActivity = (id: string) => request<void>(`/api/activities/${id}`, { method: "DELETE" });
 export const moveActivity = (id: string, direction: string, page_id: string) => request<{ activities: Activity[] }>(`/api/activities/${id}/move`, json({ direction, page_id }));
+export const setActivityTrusted = (id: string, trusted: boolean) => request<{ id: string; trusted: boolean }>(`/api/activities/${id}`, jsonMethod("PATCH", { trusted }));
 export const getActivityTypes = () => request<string[]>("/api/activity-types");
 
 // Activity type management

@@ -104,3 +104,11 @@ Session tokens issued after an LTI launch are signed with a secret persisted at 
 4. Actions and events flow between the client script and the WASM sandbox through the WebSocket, with permission-based filtering via the `EventBus`
 
 Permission levels: **view** (read-only), **play** (interactive, for learners), **edit** (authoring).
+
+### Trusted activity iframes
+
+By default, every activity runs inside a null-origin sandboxed iframe (`sandbox="allow-scripts allow-forms"`) so that activity code cannot reach notebook cookies, storage, or the surrounding DOM. The sandbox is inherited by any nested iframe the activity opens, which breaks third-party embeds that read cookies — most notably YouTube, whose player throws `Document.cookie: Forbidden in a sandboxed document without the 'allow-same-origin' flag`.
+
+For activities that need this — for example, the bundled `youtube` sample — the course owner can flip an **Enable trusted iframe** toggle from the activity's `⋯` menu (available in both play and edit mode). A trusted activity is embedded with no `sandbox` attribute, which lets nested third-party iframes work normally.
+
+Trusted activities run same-origin with the notebook and have full access to the notebook page's cookies, localStorage, and DOM. Only enable the toggle for activity types whose UI code you control.

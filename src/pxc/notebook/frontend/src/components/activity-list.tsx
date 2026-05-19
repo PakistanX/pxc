@@ -15,10 +15,11 @@ type ActivityListProps = {
   onMove?: (id: string, direction: string) => void;
   onDelete?: (id: string) => void;
   onTogglePermission?: (id: string, current: string) => void;
+  onToggleTrusted?: (id: string, current: boolean, currentPermission: string) => void;
   readOnly?: boolean;
 };
 
-export function ActivityList({ activities, onMove, onDelete, onTogglePermission, readOnly = false }: ActivityListProps) {
+export function ActivityList({ activities, onMove, onDelete, onTogglePermission, onToggleTrusted, readOnly = false }: ActivityListProps) {
   const [shareActivity, setShareActivity] = useState<{ id: string; permission: string } | null>(null);
   const [ltiActivity, setLtiActivity] = useState<{ id: string } | null>(null);
   const [apiToken, setApiToken] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
   return (
     <div>
       {activities.map((a) => (
-        <Card key={`${a.id}-${a.permission ?? "broken"}`} className="mb-4">
+        <Card key={`${a.id}-${a.permission ?? "broken"}-${a.trusted ? "T" : "U"}`} className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -73,6 +74,11 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
                       {!a.error && (
                         <DropdownMenuItem onClick={() => setLtiActivity({ id: a.id })}>Embed via LTI</DropdownMenuItem>
                       )}
+                      {!a.error && a.permission && (
+                        <DropdownMenuItem onClick={() => onToggleTrusted?.(a.id, !!a.trusted, a.permission!)}>
+                          {a.trusted ? "Disable trusted iframe" : "Enable trusted iframe"}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onDelete?.(a.id)} className="text-destructive">Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -82,7 +88,7 @@ export function ActivityList({ activities, onMove, onDelete, onTogglePermission,
             {a.error ? (
               <div className="text-sm text-destructive">{a.error}</div>
             ) : (
-              <PxcActivity context={a.context!} state={a.state} permission={a.permission!} pxcToken={a.pxc_token} />
+              <PxcActivity context={a.context!} state={a.state} permission={a.permission!} pxcToken={a.pxc_token} trusted={a.trusted} />
             )}
           </CardContent>
         </Card>

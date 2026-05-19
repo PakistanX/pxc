@@ -73,6 +73,7 @@ class PageActivity(SQLModel, table=True):
     page_id: str = Field(foreign_key="page.id")
     activity_type: str
     position: int = 0
+    trusted: bool = Field(default=False)
 
     page: Page = Relationship(back_populates="activities")
 

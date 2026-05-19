@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { getPage, getActivity, createActivity, updatePage, deletePage, deleteActivity, moveActivity, type PageDetail } from "@/lib/api";
+import { getPage, getActivity, createActivity, updatePage, deletePage, deleteActivity, moveActivity, setActivityTrusted, type PageDetail } from "@/lib/api";
 import { ActivityList } from "@/components/activity-list";
 import { AddForm } from "@/components/add-form";
 import { ItemActions } from "@/components/item-actions";
@@ -55,6 +55,17 @@ export function PageDetailPage({ pageId }: { pageId: string }) {
     });
   }
 
+  async function handleToggleTrusted(activityId: string, current: boolean, currentPermission: string) {
+    await setActivityTrusted(activityId, !current);
+    const fresh = await getActivity(activityId, currentPermission);
+    setPage((prev) => {
+      if (!prev) return prev;
+      return { ...prev, activities: prev.activities.map((a) =>
+        a.id === activityId ? fresh : a
+      ) };
+    });
+  }
+
   const isOwner = page.is_owner;
 
   return (
@@ -75,6 +86,7 @@ export function PageDetailPage({ pageId }: { pageId: string }) {
           onMove={isOwner ? handleMove : undefined}
           onDelete={isOwner ? handleDeleteActivity : undefined}
           onTogglePermission={isOwner ? handleTogglePermission : undefined}
+          onToggleTrusted={isOwner ? handleToggleTrusted : undefined}
           readOnly={!isOwner}
         />
         {isOwner && <AddForm onAdd={handleAddActivity} options={page.activity_types} />}

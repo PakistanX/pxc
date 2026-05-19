@@ -33,6 +33,10 @@ class MoveActivityBody(BaseModel):
     page_id: str
 
 
+class UpdateActivityBody(BaseModel):
+    trusted: bool
+
+
 def find_activity_dir(activity_type: str) -> Path:
     if activity_type.startswith("@"):
         parts = activity_type[1:].split("/", 1)
@@ -135,6 +139,7 @@ def activity_dict(
         "page_id": page.id,
         "activity_type": pa.activity_type,
         "position": pa.position,
+        "trusted": pa.trusted,
         "ui_path": ctx.ui_path,
         "state": ctx.get_state(),
         "permission": ctx.permission.name,
@@ -169,6 +174,7 @@ def activity_dict_or_error(
             "page_id": page.id,
             "activity_type": pa.activity_type,
             "position": pa.position,
+            "trusted": pa.trusted,
             "error": "Activity files not found",
         }
 
@@ -253,6 +259,25 @@ async def get_activity(
     if course.owner_id != current_user.id and permission != Permission.play:
         raise HTTPException(status_code=403, detail="Forbidden")
     return JSONResponse(activity_dict(pa, page, current_user.id, permission))
+
+
+@router.patch(
+    "/api/activities/{activity_id}",
+    summary="Update activity settings",
+)
+async def update_activity(
+    activity_id: str,
+    body: UpdateActivityBody,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """Update mutable settings on an activity instance (currently: trusted)."""
+    pa, _page, _course = get_owned_activity_or_404(session, activity_id, current_user)
+    pa.trusted = body.trusted
+    session.add(pa)
+    session.commit()
+    session.refresh(pa)
+    return JSONResponse({"id": pa.id, "trusted": pa.trusted})
 
 
 @router.delete(
