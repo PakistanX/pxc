@@ -17,8 +17,9 @@ from xblock.core import XBlock
 from xblock.fields import Scope, String
 
 from pxc.lib.actions import ActionValidationError
+from pxc.lib.capabilities import CapabilityError
 from pxc.lib.permission import Permission
-from pxc.lib.runtime import AssetAccessError
+from pxc.lib.runtime import AssetAccessError, SandboxContext
 from pxc.lib.runtime import PendingEvent as RuntimeEvent
 from pxc.xblock.activities import get_activity_dir, list_activities
 from pxc.xblock.field_store import DjangoFieldStore
@@ -143,6 +144,7 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
             course_id=course_id,
             user_id=user_id,
             permission=permission,
+            storage_base_url=self.runtime.handler_url(self, "storage").strip("?"),
         )
 
     # ------------------------------------------------------------------ #
@@ -337,6 +339,43 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
         content_type, _ = mimetypes.guess_type(str(asset_path))
         return Response(
             asset_path.read_bytes(),
+            content_type=content_type or "application/octet-stream",
+        )
+
+    @XBlock.handler  # type: ignore[untyped-decorator]
+    def storage(self, request: Any, suffix: str = "") -> Response:
+        """Serve a file from activity storage.
+
+        URL shape (matches `XBlockActivityRuntime.storage_url`):
+            <handler>/<storage_name>/<file_path>[?activity_id=&course_id=&user_id=]
+        Query params let an activity read another scope's file (e.g. an
+        instructor reading a learner's submission) — they're forwarded as a
+        `SandboxContext` so the runtime rebuilds the same scoped path.
+        """
+        if not self.activity_slug:
+            return Response(status=404)
+        clean = suffix.lstrip("/")
+        storage_name, _, file_path = clean.partition("/")
+        if not storage_name:
+            return Response(status=404)
+        context: SandboxContext | None = None
+        activity_id_override = request.GET.get("activity_id")
+        course_id_override = request.GET.get("course_id")
+        user_id_override = request.GET.get("user_id")
+        if activity_id_override or course_id_override or user_id_override:
+            context = {
+                "activity-id": activity_id_override,
+                "course-id": course_id_override,
+                "user-id": user_id_override,
+            }
+        runtime = self._make_runtime(Permission.view)
+        try:
+            content = runtime.storage_read(storage_name, file_path, context)
+        except (CapabilityError, AssetAccessError):
+            return Response(status=404)
+        content_type, _ = mimetypes.guess_type(file_path)
+        return Response(
+            content,
             content_type=content_type or "application/octet-stream",
         )
 
