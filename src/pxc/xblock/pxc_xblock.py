@@ -61,6 +61,8 @@ def _json_response(data: Any) -> Response:
 
 
 class PxcXBlock(XBlock):  # type: ignore[misc]
+    has_author_view = True
+
     display_name = String(
         display_name="Display Name",
         default="PXC Activity",
@@ -156,7 +158,7 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
     def _render_pxc_activity(self, permission: Permission) -> str:
         """Render the <pxc-activity> element via the shared partial template.
 
-        Used by both student_view and studio_view. Django's template engine
+        Used by both student_view and author_view. Django's template engine
         auto-escapes every `{{ var }}` for HTML attribute / text context, so
         the embedded JSON (data-context, data-state) ends up with proper
         `&quot;` for its inner double quotes without any manual escaping.
@@ -193,17 +195,25 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
         self._attach_view_javascript(frag, "student")
         return frag
 
+    def author_view(self, context: dict[str, Any] | None = None) -> Fragment:
+        # Studio's inline preview on the unit page. Without this, the runtime
+        # falls back to student_view, which renders at `play` permission.
+        if not self.activity_slug:
+            return Fragment(
+                "<p>PXC activity not configured. Click Edit to select an activity.</p>"
+            )
+
+        frag = Fragment(self._render_pxc_activity(Permission.edit))
+        self._attach_view_javascript(frag, "student")
+        return frag
+
     def studio_view(self, context: dict[str, Any] | None = None) -> Fragment:
-        activity_html = (
-            self._render_pxc_activity(Permission.edit) if self.activity_slug else ""
-        )
         rendered = self._render_template(
             "static/html/studio_view.html",
             {
                 "activities": list_activities(),
                 "current_slug": self.activity_slug,
                 "display_name": self.display_name,
-                "activity_html": activity_html,
             },
         )
         frag = Fragment(rendered)

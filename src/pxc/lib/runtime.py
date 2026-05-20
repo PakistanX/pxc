@@ -105,6 +105,7 @@ class ActivityRuntime:
         self._pending_events: list[PendingEvent] = []
 
         # Manifest capabilities and fields (validated by Pydantic)
+        # TODO we don't need to validate the manifest for every action
         with open(self._activity_dir / "manifest.json", encoding="utf8") as f:
             self.manifest = PxcActivityManifest.model_validate_json(f.read())
         self.capability_checker = CapabilityChecker(self.manifest.capabilities)
