@@ -28,6 +28,20 @@ export function setup(activity) {
         .md-preview { margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 4px; }
         .md-preview-label { font-weight: bold; margin-top: 1rem; }
         .no-preview { color: #666; font-style: italic; }
+        .md-preview blockquote {
+          margin: 1rem 0;
+          padding: 0.5rem 1rem;
+          border-left: 4px solid #4a90e2;
+          background: #f5f8fc;
+          color: #444;
+          font-style: italic;
+        }
+        .md-preview blockquote p { margin: 0.25rem 0; }
+        .md-preview blockquote blockquote {
+          margin: 0.5rem 0;
+          border-left-color: #7fb1ec;
+          background: #eef3fa;
+        }
       </style>
       <div class="md-container">
         <textarea class="md-editor" id="md-input">${escapeHtml(markdown)}</textarea>
@@ -57,6 +71,20 @@ export function setup(activity) {
       <style>
         .md-container { font-family: sans-serif; max-width: 800px; }
         .no-content { color: #666; font-style: italic; }
+        .md-container blockquote {
+          margin: 1rem 0;
+          padding: 0.5rem 1rem;
+          border-left: 4px solid #4a90e2;
+          background: #f5f8fc;
+          color: #444;
+          font-style: italic;
+        }
+        .md-container blockquote p { margin: 0.25rem 0; }
+        .md-container blockquote blockquote {
+          margin: 0.5rem 0;
+          border-left-color: #7fb1ec;
+          background: #eef3fa;
+        }
       </style>
       <div class="md-container">
         ${html || '<p class="no-content">No content available yet.</p>'}
