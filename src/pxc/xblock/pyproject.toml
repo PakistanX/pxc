@@ -33,6 +33,7 @@ include-package-data = true
     "samples/**/*.css",
     "samples/**/*.html",
     "samples/**/*.json",
+    "samples/**/assets/*",
 ]
 
 [project.entry-points."xblock.v1"]
