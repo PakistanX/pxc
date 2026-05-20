@@ -22,7 +22,7 @@ from pxc.lib.file_storage import FileStorageError
 from pxc.lib.permission import Permission
 from pxc.lib.runtime import ActivityRuntime, AssetAccessError, SandboxContext
 from pxc.lib.signing import TokenError, verify_token
-from pxc.notebook import constants
+from pxc.notebook import constants, db
 from pxc.notebook.auth import (
     SESSION_COOKIE,
     get_current_user,
@@ -343,28 +343,30 @@ async def activity_ws(
     websocket: WebSocket,
     activity_id: str,
     permission: Permission,
-    session: Session = Depends(get_session),
 ) -> None:
+    # Acquire a DB session only for auth+resolve, then release it before the
+    # long-running receive loop — otherwise every open tab holds a pooled
+    # connection for the lifetime of its websocket and exhausts the pool.
     policy_violation_code = 1008
-
     token = websocket.cookies.get(SESSION_COOKIE)
-    current_user = lookup_user(session, token)
-    if not current_user:
-        await websocket.close(code=policy_violation_code)
-        return
-
-    try:
-        info = resolve_activity(session, activity_id, current_user)
-        check_permission(info, permission)
-    except HTTPException:
-        await websocket.close(code=policy_violation_code)
-        return
+    with db.session_scope() as session:
+        current_user = lookup_user(session, token)
+        if not current_user:
+            await websocket.close(code=policy_violation_code)
+            return
+        try:
+            info = resolve_activity(session, activity_id, current_user)
+            check_permission(info, permission)
+        except HTTPException:
+            await websocket.close(code=policy_violation_code)
+            return
+        user_id = current_user.id
     await websocket.accept()
 
     subscriber = event_bus.subscribe(
         info.activity_type,
         websocket,
-        current_user.id,
+        user_id,
         permission,
         info.course_id,
         activity_id,
@@ -383,7 +385,7 @@ async def activity_ws(
             # TODO raise error?
             continue
 
-        ctx = load_any_activity(info, current_user.id, permission)
+        ctx = load_any_activity(info, user_id, permission)
         try:
             ctx.on_action(action_name, action_value)
         except ActionValidationError as e:
