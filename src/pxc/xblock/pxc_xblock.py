@@ -88,10 +88,10 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
 
     def _resolve_permission(self) -> Permission:
         """Permission for this handler call, derived from XBlock runtime context."""
-        return resolve_permission(
-            self.scope_ids.user_id,
-            bool(getattr(self.runtime, "user_is_staff", False)),
-        )
+        # TODO how do we actually determine if a user is allowed to be in edit mode?
+        # shouldn't it be getattr(self.runtime, "user_is_staff", False)? But this fails in studio view
+        has_edit_permission = getattr(self.runtime, "is_author_mode", False)
+        return resolve_permission(self.scope_ids.user_id, has_edit_permission)
 
     @staticmethod
     def resource_string(path: str) -> str:
@@ -151,7 +151,7 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
 
     def _attach_view_javascript(self, frag: Fragment, view: str) -> None:
         """Wire the standard JS resources + initialize_js entrypoint for a view."""
-        frag.add_javascript_url(self.runtime.handler_url(self, "pxcjs"))
+        frag.add_javascript_url(self.runtime.handler_url(self, "pxcjs").strip("?"))
         frag.add_javascript(self.resource_string(f"static/js/{view}.js"))
         frag.initialize_js(f"Pxc{view.capitalize()}XBlock")
 
@@ -178,8 +178,8 @@ class PxcXBlock(XBlock):  # type: ignore[misc]
                 # suffixed with a "?", which we strip
                 "action_url": self.runtime.handler_url(self, "action").strip("?"),
                 "events_url": self.runtime.handler_url(self, "events").strip("?"),
-                "asset_base_url": self.runtime.handler_url(self, "asset"),
-                "src_url": self.runtime.handler_url(self, "uijs"),
+                "asset_base_url": self.runtime.handler_url(self, "asset").strip("?"),
+                "src_url": self.runtime.handler_url(self, "uijs").strip("?"),
                 "events_cursor": self._initial_events_cursor(course_id, activity_id),
                 "permission": permission.value,
             },
