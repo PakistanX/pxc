@@ -10,7 +10,7 @@ Offline mode is supported, with two possible options:
 2. Communication between the frontend and the backend is performed in an event-driven architecture  (see [event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)). When offline, events are delayed until the client comes back online. Conflicts might happen and must be resolved, for instance when users attempt to connect from multiple devices.
 
 The concept of PXC was initially described by [Braden MacDonald](https://github.com/bradenmacdonald
-) in the "XBlock Next Proposals" from (2020)[https://docs.google.com/document/d/1btnE7pIZccvlrDrJ8gHjEPfOrkMCZgSkgw8D9jXaLx4/edit?tab=t.0], (2024)[https://docs.google.com/document/d/1xelb7iGvWRtT71F2c_dBkQEB47Cj0etT5VGgbVdAPKY/edit?tab=t.0], (2026)[https://docs.google.com/document/d/1p-xvUKgG5HaUE-bzew98KPfrGCEZ6wsb6cUJG_gET28/edit?tab=t.0].
+) in the "XBlock Next Proposals" from [2020](https://docs.google.com/document/d/1btnE7pIZccvlrDrJ8gHjEPfOrkMCZgSkgw8D9jXaLx4/edit?tab=t.0), [2024](https://docs.google.com/document/d/1xelb7iGvWRtT71F2c_dBkQEB47Cj0etT5VGgbVdAPKY/edit?tab=t.0), [2026](https://docs.google.com/document/d/1p-xvUKgG5HaUE-bzew98KPfrGCEZ6wsb6cUJG_gET28/edit?tab=t.0).
 
 ## Sub-projects
 
