@@ -3,6 +3,8 @@ name = "pxc-demo"
 version = "0.1.0"
 description = "PXC demo app: minimal FastAPI server for running PXC activities locally."
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+classifiers = ["License :: OSI Approved :: Apache Software License"]
 dependencies = [
     "pxc-lib",
     "fastapi[standard]",

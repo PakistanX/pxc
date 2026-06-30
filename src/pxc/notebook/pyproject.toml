@@ -3,6 +3,8 @@ name = "pxc-notebook"
 version = "0.1.0"
 description = "PXC notebook app: courseware FastAPI server with SQLite persistence and a Next.js frontend."
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+classifiers = ["License :: OSI Approved :: Apache Software License"]
 dependencies = [
     "pxc-lib",
     "alembic",

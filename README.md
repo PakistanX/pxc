@@ -65,3 +65,7 @@ Install all sub-projects in editable mode plus dev dependencies:
 Run tests:
 
     make test
+
+## License
+
+PXC is licensed under the Apache License 2.0 — see [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
