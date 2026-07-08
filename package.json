@@ -2,10 +2,10 @@
   "private": true,
   "license": "Apache-2.0",
   "devDependencies": {
+    "@bytecodealliance/jco": "^1.24.6",
     "esbuild": "^0.25.0"
   },
   "dependencies": {
-    "@bytecodealliance/componentize-js": "^0.19.3",
-    "@bytecodealliance/jco": "^1.17.3"
+    "@bytecodealliance/componentize-js": "^0.19.3"
   }
 }

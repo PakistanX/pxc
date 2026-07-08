@@ -1,6 +1,6 @@
 """Tests for PxcXBlock helpers that don't need a full XBlock runtime."""
 
-from pxc.lib.permission import Permission
+from pxc.xblock.permission import Permission
 from pxc.xblock.permissions import resolve_permission
 
 

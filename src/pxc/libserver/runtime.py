@@ -1,14 +1,24 @@
 from pathlib import Path
 
-from django.contrib.auth import get_user_model
-
 from pxc.lib.field_store import FieldStore
 from pxc.lib.file_storage import FileStorage
 from pxc.lib.permission import Permission
 from pxc.lib.runtime import ActivityRuntime, SandboxContext
+from pxc.libserver import client
 
 
-class XBlockActivityRuntime(ActivityRuntime):
+class ProxyActivityRuntime(ActivityRuntime):
+    """ActivityRuntime for the standalone libserver.
+
+    Field/storage/username host functions are backed by HTTP-callback
+    adapters (see field_store.py, file_storage.py) that reach back into
+    pxc-xblock's internal API — this process never touches the LMS database
+    or S3 credentials directly. ``storage_url`` still needs to resolve to a
+    browser-reachable URL, which is the xblock's own `storage` handler, so
+    the caller must pass the same handler URL the xblock would have built
+    for ``XBlockActivityRuntime`` (see pxc.xblock.pxc_xblock._make_runtime,
+    now threaded through the /state and /action request payloads instead).
+    """
 
     def __init__(
         self,
@@ -36,17 +46,10 @@ class XBlockActivityRuntime(ActivityRuntime):
     def storage_url(
         self, name: str, path: str, context: SandboxContext | None = None
     ) -> str:
-        """Build the xblock `storage` handler URL for a file in scoped storage.
-
-        The base class generates `/activity/{activity_id}/storage/{name}/...`,
-        which is the notebook app's URL space. For the xblock we swap that
-        prefix for the handler URL precomputed by `PxcXBlock._make_runtime` so
-        the activity reaches our `storage` handler instead.
-        """
         base = super().storage_url(name, path, context)
         prefix = f"/activity/{self._activity_id}/storage"
         return f"{self._storage_base_url}{base[len(prefix):]}"
 
     def get_usernames(self, ids: list[str]) -> list[tuple[str, str]]:
-        User = get_user_model()
-        return [(str(u.id), u.username) for u in User.objects.filter(id__in=ids).all()]
+        result = client.post("/usernames", {"ids": ids})
+        return [(row["id"], row["username"]) for row in result["usernames"]]

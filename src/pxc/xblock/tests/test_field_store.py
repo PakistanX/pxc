@@ -93,6 +93,41 @@ def test_delete() -> None:
     assert store.delete("c1", "mcq", "a1", "u1", "x") is False
 
 
+def test_reset_learner_clears_only_that_users_fields_and_logs() -> None:
+    store = make_store()
+    store.set("c1", "mcq", "a1", "alice", "scenario", "cold_outreach")
+    store.set("c1", "mcq", "a1", "bob", "scenario", "team_intro")
+    store.log_append("c1", "mcq", "a1", "alice", "attempts", {"n": 1})
+    store.log_append("c1", "mcq", "a1", "bob", "attempts", {"n": 1})
+
+    result = store.reset_learner("c1", "mcq", "a1", "alice")
+
+    assert result == {"fields_deleted": 1, "log_entries_deleted": 1}
+    assert store.get("c1", "mcq", "a1", "alice", "scenario") is None
+    assert store.log_get_before("c1", "mcq", "a1", "alice", "attempts", None, 10) == []
+    # bob untouched
+    assert store.get("c1", "mcq", "a1", "bob", "scenario") == "team_intro"
+    assert len(store.log_get_before("c1", "mcq", "a1", "bob", "attempts", None, 10)) == 1
+
+
+def test_reset_learner_does_not_touch_course_scoped_fields() -> None:
+    store = make_store()
+    # course-scoped fields are stored with user_id="" (see runtime.py's
+    # _scope_key_segments) — resetting a real learner must never match those.
+    store.set("c1", "mcq", "a1", "", "haiku_api_key", "sk-ant-shared")
+    store.set("c1", "mcq", "a1", "alice", "scenario", "cold_outreach")
+
+    store.reset_learner("c1", "mcq", "a1", "alice")
+
+    assert store.get("c1", "mcq", "a1", "", "haiku_api_key") == "sk-ant-shared"
+
+
+def test_reset_learner_rejects_empty_user_id() -> None:
+    store = make_store()
+    with pytest.raises(ValueError):
+        store.reset_learner("c1", "mcq", "a1", "")
+
+
 def test_log_append_returns_strictly_increasing_ids() -> None:
     store = make_store()
     id0 = store.log_append("c1", "quiz", "a1", "u1", "attempts", {"score": 5})

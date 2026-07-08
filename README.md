@@ -22,9 +22,11 @@ The concept of PXC was initially described by [Braden MacDonald](https://github.
 | [src/pxc/demo/](./src/pxc/demo/) | **Demo server.** Minimal FastAPI app that serves sample activities with a toolbar for switching users, permissions, and embedding modes. Useful for development and testing. |
 | [src/pxc/notebook/](./src/pxc/notebook/) | **Notebook application.** Full courseware management app (FastAPI + Next.js) for organizing courses, pages, and activities with drag-and-drop, real-time execution, and SQLite persistence. |
 | [src/pxc/lti/](./src/pxc/lti/) | **LTI 1.3 tool provider.** FastAPI app that exposes PXC activities as LTI 1.3 tools for embedding in Open edX, Canvas, or any LMS. Includes platform registration admin and deep linking support. |
+| [src/pxc/xblock/](./src/pxc/xblock/) | **Open edX XBlock.** Django app that embeds PXC activities into Open edX courses. Talks to `pxc-libserver` over HTTP instead of depending on `pxc-lib` directly, so it can run on an older Python than the LMS/CMS itself. |
+| [src/pxc/libserver/](./src/pxc/libserver/) | **Standalone lib-server.** FastAPI app that hosts `pxc-lib`'s `ActivityRuntime` + wasmtime sandbox for `pxc-xblock`, deployed as its own process so it can run a newer Python than the embedding LMS/CMS requires. |
 | [samples/](./samples/) | **Sample activities.** Reference PXC activities (MCQ, quiz, video, chat, etc.) that demonstrate the standard. |
 
-Each sub-project under `src/pxc/` has its own `pyproject.toml` and can be installed independently (`pip install -e src/pxc/lib`, etc.). The apps (`pxc-demo`, `pxc-notebook`, `pxc-lti`) all depend on `pxc-lib`. The root `pyproject.toml` is a dev-only umbrella that holds the shared linting/typing/formatting configuration.
+Each sub-project under `src/pxc/` has its own `pyproject.toml` and can be installed independently (`pip install -e src/pxc/lib`, etc.). The apps (`pxc-demo`, `pxc-notebook`, `pxc-lti`, `pxc-libserver`) all depend on `pxc-lib`; `pxc-xblock` does not — see [src/pxc/xblock/README.md](./src/pxc/xblock/README.md#architecture-split-from-pxc-lib). The root `pyproject.toml` is a dev-only umbrella that holds the shared linting/typing/formatting configuration.
 
 ## Installation
 

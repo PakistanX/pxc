@@ -54,6 +54,23 @@ class PendingEvent(TypedDict):
     permission: str
 
 
+class GradeEvent(TypedDict):
+    """Buffered grading/completion signal, to be published by the platform.
+
+    ``event_type`` matches XBlock's ``runtime.publish(self, event_type,
+    payload)`` convention: "grade" (payload ``{"value": float, "max_value":
+    float}``) for pass/fail/score verbs, "completion" (payload
+    ``{"completion": float}``) for completed/progressed verbs. The base
+    ActivityRuntime only buffers these — it has no XBlock runtime to publish
+    through. Platform integrations that want real grade passback (e.g.
+    XBlockActivityRuntime) drain this via ``clear_pending_grades()`` and
+    publish it themselves.
+    """
+
+    event_type: str
+    payload: dict[str, float]
+
+
 def sandbox_to_host_context(sandbox_context: SandboxContext) -> HostContext:
     host_context: HostContext = {}
     if sandbox_context["activity-id"] is not None:
@@ -103,6 +120,10 @@ class ActivityRuntime:
 
         # Events posted by sandbox during execution
         self._pending_events: list[PendingEvent] = []
+
+        # Grading/completion signals posted by the sandbox during execution
+        # (see report_* methods below and GradeEvent).
+        self._pending_grades: list[GradeEvent] = []
 
         # Manifest capabilities and fields (validated by Pydantic)
         # TODO we don't need to validate the manifest for every action
@@ -359,6 +380,12 @@ class ActivityRuntime:
         events = self._pending_events
         self._pending_events = []
         return events
+
+    def clear_pending_grades(self) -> list[GradeEvent]:
+        """Return and clear all pending grading/completion signals."""
+        grades = self._pending_grades
+        self._pending_grades = []
+        return grades
 
     def get_state(self) -> dict[str, FieldType]:
         """Get the activity state to send to the client.
@@ -663,12 +690,22 @@ class ActivityRuntime:
             )
 
     # ── Report host functions ──────────────────────────────────────────
+    #
+    # Each verb buffers a GradeEvent in addition to logging. "completed" and
+    # "progressed" map to XBlock's completion signal (fractional, 0.0-1.0);
+    # "passed"/"failed"/"scored" map to its grade signal (value/max_value).
+    # The base class only buffers — see clear_pending_grades(). Platform
+    # integrations that override these (e.g. NotebookActivityRuntime) to
+    # persist statements directly are unaffected: they don't call super().
 
     def report_completed(self) -> bool:
         logger.info(
             "report completed: user=%s activity=%s",
             self._user_id,
             self._activity_id,
+        )
+        self._pending_grades.append(
+            {"event_type": "completion", "payload": {"completion": 1.0}}
         )
         return True
 
@@ -679,6 +716,12 @@ class ActivityRuntime:
             self._activity_id,
             score,
         )
+        self._pending_grades.append(
+            {
+                "event_type": "grade",
+                "payload": {"value": score if score is not None else 1.0, "max_value": 1.0},
+            }
+        )
         return True
 
     def report_failed(self, score: float | None) -> bool:
@@ -687,6 +730,12 @@ class ActivityRuntime:
             self._user_id,
             self._activity_id,
             score,
+        )
+        self._pending_grades.append(
+            {
+                "event_type": "grade",
+                "payload": {"value": score if score is not None else 0.0, "max_value": 1.0},
+            }
         )
         return True
 
@@ -697,6 +746,9 @@ class ActivityRuntime:
             self._activity_id,
             progress,
         )
+        self._pending_grades.append(
+            {"event_type": "completion", "payload": {"completion": progress}}
+        )
         return True
 
     def report_scored(self, score: float) -> bool:
@@ -705,6 +757,9 @@ class ActivityRuntime:
             self._user_id,
             self._activity_id,
             score,
+        )
+        self._pending_grades.append(
+            {"event_type": "grade", "payload": {"value": score, "max_value": 1.0}}
         )
         return True
 

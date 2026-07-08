@@ -7,7 +7,7 @@ under pytest's default rootdir discovery).
 
 from typing import Any
 
-from pxc.lib.permission import Permission
+from pxc.xblock.permission import Permission
 
 
 def resolve_permission(user_id: Any, user_is_staff: bool) -> Permission:

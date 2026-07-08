@@ -1,0 +1,119 @@
+{
+  "name": "email-prompt-craft",
+  "ui": "ui.js",
+  "sandbox": "sandbox.wasm",
+  "capabilities": {
+    "http": {
+      "allowed_hosts": ["api.anthropic.com"]
+    },
+    "grading": {}
+  },
+  "fields": {
+    "haiku_api_key": {
+      "type": "string",
+      "scope": "course",
+      "default": ""
+    },
+    "scenario": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "prompt_text": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "output_text": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "attempt_count": {
+      "type": "integer",
+      "scope": "user,activity",
+      "default": 0
+    },
+    "submitted": {
+      "type": "boolean",
+      "scope": "user,activity",
+      "default": false
+    },
+    "grade_result": {
+      "type": "object",
+      "scope": "user,activity",
+      "properties": {
+        "scores": {
+          "type": "object",
+          "properties": {
+            "a": { "type": "integer" },
+            "b": { "type": "integer" },
+            "c": { "type": "integer" }
+          }
+        },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "default": null
+    },
+    "attempts": {
+      "type": "log",
+      "scope": "user,activity",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": { "type": "string" },
+          "output": { "type": "string" }
+        }
+      }
+    }
+  },
+  "actions": {
+    "credentials.save": {
+      "type": "object",
+      "properties": {
+        "haiku_api_key": { "type": "string" }
+      }
+    },
+    "scenario.select": { "type": "string" },
+    "email.generate": { "type": "string" },
+    "email.submit": { "type": "object", "properties": {} }
+  },
+  "events": {
+    "credentials.status": {
+      "type": "object",
+      "properties": { "configured": { "type": "boolean" } }
+    },
+    "fields.change.scenario": { "type": "string" },
+    "email.generated": {
+      "type": "object",
+      "properties": {
+        "prompt": { "type": "string" },
+        "output": { "type": "string" },
+        "attempt_count": { "type": "integer" }
+      }
+    },
+    "email.graded": {
+      "type": "object",
+      "properties": {
+        "scores": {
+          "type": "object",
+          "properties": {
+            "a": { "type": "integer" },
+            "b": { "type": "integer" },
+            "c": { "type": "integer" }
+          }
+        },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "generation.error": { "type": "string" }
+  }
+}

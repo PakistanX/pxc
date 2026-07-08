@@ -21,6 +21,69 @@
       </div>
     </li>
 
+    <li class="field comp-setting-entry is-set">
+      <div class="wrapper-comp-setting">
+        <label class="label setting-label" for="pxc-has-score">Scored</label>
+        <input class="input" type="checkbox" id="pxc-has-score" {% if has_score %}checked{% endif %} />
+      </div>
+      <span class="tip setting-help">Whether this activity contributes a grade to the course. Turn off for activities that only track completion.</span>
+    </li>
+
+    <li class="field comp-setting-entry is-set">
+      <div class="wrapper-comp-setting">
+        <label class="label setting-label" for="pxc-weight">Problem Weight</label>
+        <input class="input setting-input" type="number" step="0.1" min="0" id="pxc-weight" value="{{weight}}" />
+      </div>
+      <span class="tip setting-help">Defines the number of points each problem is worth in this activity.</span>
+    </li>
+
+    <li class="field comp-setting-entry is-set pxc-upload-entry">
+      <div class="wrapper-comp-setting">
+        <label class="label setting-label">Upload new activity</label>
+        <div class="pxc-upload-widget" id="pxc-upload-widget">
+          <label class="pxc-upload-dropzone" for="pxc-upload-bundle" id="pxc-upload-dropzone">
+            <svg class="pxc-upload-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path fill="currentColor" d="M12 3l5 5h-3v6h-4V8H7l5-5zM5 18h14v2H5z"/>
+            </svg>
+            <span class="pxc-upload-dropzone-text">
+              <strong>Choose a .zip</strong> or drag it here
+            </span>
+            <span class="pxc-upload-filename" id="pxc-upload-filename"></span>
+          </label>
+          <input type="file" accept=".zip" id="pxc-upload-bundle" class="pxc-upload-input" />
+          <a href="#" class="button pxc-upload-button" id="pxc-upload-button">
+            <span class="pxc-upload-spinner" id="pxc-upload-spinner"></span>
+            <span id="pxc-upload-button-label">Upload &amp; Build</span>
+          </a>
+        </div>
+        <p class="tip setting-help pxc-upload-status" id="pxc-upload-status"></p>
+      </div>
+      <!--
+        Not gated on a template flag: studio_view()'s render path carries no
+        reliable user identity in this environment (confirmed by diagnostic),
+        so visibility can't be conditioned on is_superuser here. The actual
+        enforcement is server-side in the upload_activity handler (a live
+        authenticated request, unlike this render) — non-superusers get a
+        clean 403 on submit instead of the widget being hidden.
+      -->
+      <span class="tip setting-help">Superusers only — others will get an error on submit.</span>
+    </li>
+
+    <li class="field comp-setting-entry is-set pxc-reset-entry">
+      <div class="wrapper-comp-setting">
+        <label class="label setting-label" for="pxc-reset-email">Reset a learner's attempt</label>
+        <div class="pxc-reset-widget">
+          <input class="input setting-input" type="email" id="pxc-reset-email" placeholder="student@example.com" />
+          <a href="#" class="button pxc-reset-button" id="pxc-reset-button">
+            <span class="pxc-reset-spinner" id="pxc-reset-spinner"></span>
+            <span id="pxc-reset-button-label">Reset</span>
+          </a>
+        </div>
+        <p class="tip setting-help pxc-reset-status" id="pxc-reset-status"></p>
+      </div>
+      <span class="tip setting-help">Clears this student's saved scenario/prompt/output/grade for this activity block only. Does not undo the LMS grade/completion record already recorded — use the platform's own "Reset Student Attempts" for that too, if this activity is scored.</span>
+    </li>
+
   </ul>
 
   <div class="xblock-actions">
@@ -34,3 +97,94 @@
     </ul>
   </div>
 </div>
+
+<style>
+  .pxc-upload-widget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pxc-upload-dropzone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 260px;
+    min-width: 220px;
+    padding: 10px 14px;
+    border: 1px dashed #b0b6bf;
+    border-radius: 4px;
+    background: #fafbfc;
+    color: #6c7688;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .pxc-upload-dropzone:hover,
+  .pxc-upload-dropzone.pxc-drag-over {
+    border-color: #0075b4;
+    background: #eef7fc;
+    color: #1d2029;
+  }
+  .pxc-upload-icon { flex: 0 0 auto; opacity: 0.6; }
+  .pxc-upload-dropzone-text { font-size: 13px; line-height: 1.3; }
+  .pxc-upload-dropzone-text strong { color: #0075b4; }
+  .pxc-upload-filename {
+    font-size: 12px;
+    font-style: italic;
+    color: #1d2029;
+    margin-left: 4px;
+  }
+  .pxc-upload-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .pxc-upload-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .pxc-upload-button.is-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .pxc-upload-spinner {
+    display: none;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: pxc-spin 0.7s linear infinite;
+  }
+  .pxc-upload-button.is-busy .pxc-upload-spinner { display: inline-block; }
+  @keyframes pxc-spin {
+    to { transform: rotate(360deg); }
+  }
+  .pxc-upload-status { min-height: 1.2em; }
+  .pxc-upload-status.pxc-status-error { color: #b52626; }
+  .pxc-upload-status.pxc-status-success { color: #1b7a3d; }
+
+  .pxc-reset-widget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pxc-reset-widget .input { flex: 1 1 auto; }
+  .pxc-reset-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .pxc-reset-button.is-busy .pxc-reset-spinner { display: inline-block; }
+  .pxc-reset-spinner {
+    display: none;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: pxc-spin 0.7s linear infinite;
+  }
+  .pxc-reset-status { min-height: 1.2em; }
+  .pxc-reset-status.pxc-status-error { color: #b52626; }
+  .pxc-reset-status.pxc-status-success { color: #1b7a3d; }
+</style>

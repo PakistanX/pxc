@@ -8,6 +8,7 @@ install-dev: ## Install all sub-projects in editable mode plus dev dependencies
 	pip install -e src/pxc/demo
 	pip install -e src/pxc/notebook
 	pip install -e src/pxc/lti
+	pip install -e src/pxc/libserver
 	pip install -e src/pxc/xblock
 	pip install -e .[dev]
 
@@ -28,6 +29,9 @@ demo-server: ## Run a development server for the demo app
 
 lti-server: ## Run the LTI tool provider server (port 9754)
 	python -m pxc.lti --host=0.0.0.0
+
+libserver: ## Run the standalone PXC lib-server for pxc-xblock (port 9760)
+	uvicorn pxc.libserver.app:app --host=0.0.0.0 --port=9760 --reload
 
 notebook-server: ## Run the notebook server (port 9753) — build frontend first with notebook-frontend-build
 	fastapi dev src/pxc/notebook/app.py --host=127.0.0.1 --port=9753

@@ -1,50 +1,70 @@
-"""Django default_storage-backed FileStorage for PXC XBlock."""
+"""Django default_storage-backed file storage for PXC XBlock.
+
+Called from internal_api.py (HTTP callbacks from the standalone lib-server)
+rather than injected into an in-process `ActivityRuntime` — pxc-xblock no
+longer depends on pxc-lib, so this is a plain class, not an ABC subclass.
+
+Targets Python 3.5 (Juniper-era Open edX): no f-strings, no
+``from __future__ import annotations``, no bare generic subscripting.
+"""
+
+from typing import List, Tuple
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
-from pxc.lib.file_storage import FileStorage, FileStorageError
+
+class FileStorageError(Exception):
+    """Raised on file storage access errors (path traversal, missing files, etc.)."""
 
 
-class DjangoFileStorage(FileStorage):
-    """FileStorage backed by Django's default_storage (local, S3, GCS, etc.)."""
+class DjangoFileStorage(object):
+    """File storage backed by Django's default_storage (local, S3, GCS, etc.)."""
 
-    def __init__(self, base_path: str) -> None:
+    def __init__(self, base_path):
+        # type: (str) -> None
         self._base = base_path.rstrip("/")
 
-    def _path(self, path: str) -> str:
+    def _path(self, path):
+        # type: (str) -> str
         clean = path.lstrip("/")
-        return f"{self._base}/{clean}" if self._base else clean
+        return "{0}/{1}".format(self._base, clean) if self._base else clean
 
-    def mkdir(self, path: str) -> None:
+    def mkdir(self, path):
+        # type: (str) -> None
         pass  # object storage has no real directories; local storage creates on write
 
-    def read(self, path: str) -> bytes:
+    def read(self, path):
+        # type: (str) -> bytes
         full = self._path(path)
         if not default_storage.exists(full):
-            raise FileStorageError(f"File not found: {path!r}")
+            raise FileStorageError("File not found: {0!r}".format(path))
         with default_storage.open(full) as f:
-            return f.read()  # type: ignore[no-any-return]
+            return f.read()
 
-    def write(self, path: str, content: bytes) -> None:
+    def write(self, path, content):
+        # type: (str, bytes) -> None
         full = self._path(path)
         if default_storage.exists(full):
             default_storage.delete(full)
         default_storage.save(full, ContentFile(content))
 
-    def exists(self, path: str) -> bool:
-        return default_storage.exists(self._path(path))  # type: ignore[no-any-return]
+    def exists(self, path):
+        # type: (str) -> bool
+        return default_storage.exists(self._path(path))
 
-    def list(self, path: str) -> tuple[list[str], list[str]]:
+    def list(self, path):
+        # type: (str) -> Tuple[List[str], List[str]]
         full = self._path(path)
         try:
-            # Django returns (dirs, files); our ABC expects (files, dirs).
+            # Django returns (dirs, files); our callers expect (files, dirs).
             dirs, files = default_storage.listdir(full)
         except OSError as e:
-            raise FileStorageError(f"Directory not found: {path!r}") from e
+            raise FileStorageError("Directory not found: {0!r}".format(path)) from e
         return sorted(files), sorted(dirs)
 
-    def delete(self, path: str) -> bool:
+    def delete(self, path):
+        # type: (str) -> bool
         full = self._path(path)
         if default_storage.exists(full):
             default_storage.delete(full)
@@ -55,7 +75,7 @@ class DjangoFileStorage(FileStorage):
         except OSError:
             return False
         for f in files:
-            default_storage.delete(f"{full}/{f}")
+            default_storage.delete("{0}/{1}".format(full, f))
         for d in dirs:
-            self.delete(f"{path}/{d}")
+            self.delete("{0}/{1}".format(path, d))
         return True

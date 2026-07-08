@@ -13,6 +13,7 @@ src/pxc/notebook/samples/**/static
 __pycache__/
 *.pyc
 .venv/
+venv/
 *.egg-info
 
 # Node
@@ -21,3 +22,4 @@ node_modules/
 # IDE
 .idea/
 .vscode/
+.DS_Store

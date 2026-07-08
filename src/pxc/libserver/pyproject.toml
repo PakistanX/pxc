@@ -1,0 +1,29 @@
+[project]
+name = "pxc-libserver"
+version = "0.1.0"
+description = "Standalone PXC runtime service: hosts ActivityRuntime + WASM sandbox execution (wasmtime), so it can run a newer Python than the LMS/CMS process embedding pxc-xblock."
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+classifiers = ["License :: OSI Approved :: Apache Software License"]
+dependencies = [
+    "pxc-lib",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "python-multipart",
+    "componentize-py",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pxc.libserver"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"pxc.libserver" = "."
+
+[tool.setuptools.exclude-package-data]
+"pxc.libserver" = ["tests/*", "tests/**/*"]

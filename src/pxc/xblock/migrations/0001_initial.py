@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ("activity_id", models.CharField(db_index=True, max_length=128)),
                 ("user_id", models.CharField(db_index=True, max_length=64)),
                 ("key", models.CharField(db_index=True, max_length=128)),
-                ("value", models.JSONField()),
+                ("value", models.TextField()),
             ],
         ),
         migrations.CreateModel(
@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
                 ("activity_id", models.CharField(db_index=True, max_length=128)),
                 ("user_id", models.CharField(db_index=True, max_length=64)),
                 ("key", models.CharField(db_index=True, max_length=128)),
-                ("value", models.JSONField()),
+                ("value", models.TextField()),
             ],
             options={
                 "unique_together": {
@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
                 ("activity_id", models.CharField(db_index=True, max_length=128)),
                 ("event_name", models.CharField(max_length=255)),
                 ("event_value", models.TextField()),
-                ("event_context", models.JSONField()),
+                ("event_context", models.TextField()),
                 ("event_permission", models.CharField(max_length=16)),
                 ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
             ],

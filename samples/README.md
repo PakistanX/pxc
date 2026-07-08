@@ -11,6 +11,7 @@ For the full specification of the activity format, see the [Activity API Referen
 | [chat](./chat/) | Real-time collaborative chat with log-backed message history | Yes |
 | [chess](./chess/) | Turn-based chess game with player management and game records | Yes |
 | [collab-editor](./collab-editor/) | Collaborative text editor with Yjs synchronization and markdown rendering | Yes |
+| [email-prompt-craft](./email-prompt-craft/) | Prompt-engineering exercise: write/iterate a prompt, generate a professional email via Claude Haiku, auto-graded against a rubric (uses HTTP and grading capabilities) | Yes |
 | [flappy-bird](./flappy-bird/) | Flappy bird game with personal best scores and course-wide leaderboard | Yes |
 | [flashcards](./flashcards/) | Spaced-repetition flip cards with author-selectable SM-2 or binary rating | Yes |
 | [helloworld](./helloworld/) | Minimal "Hello World" activity demonstrating basic PXC setup | No |
