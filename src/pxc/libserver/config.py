@@ -9,6 +9,16 @@ wired up however the platform is deployed.
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Loads a `.env` file (if present) into os.environ *before* the os.environ.get()
+# calls below run. Searches the current working directory and walks upward —
+# put `.env` wherever you launch uvicorn from (or any parent of it). Does NOT
+# override variables already set in the real environment (e.g. by systemd's
+# EnvironmentFile= or a shell export), so a `.env` is a fallback/dev
+# convenience, not a way to force a value over what's already exported.
+load_dotenv()
+
 # Base URL of the pxc-xblock internal callback API (Django, running inside
 # LMS/CMS). Host functions that touch persistent state (fields, storage,
 # usernames) call back here — see internal_api.py in pxc.xblock.

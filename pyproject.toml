@@ -12,6 +12,7 @@ dev = [
     "componentize-py",
     "datamodel-code-generator",
     "httpx",
+    "markdown",
     "mypy",
     "pylint",
     "pytest",
