@@ -36,25 +36,72 @@ const GRADING_SYSTEM_PROMPT =
 
 function gradingRubricPrompt(submission) {
   return (
-    "Grade this M1L8 submission: a prompt + AI-generated email for one professional email scenario. " +
-    "The prompt must use ≥2 of 3 Craft techniques: Role Assignment, Context & Constraints, Format & Success Criteria.\n\n" +
+    "Grade this M1L8 submission: a learner's PROMPT plus the AI-generated EMAIL it produced, " +
+    "for one professional email scenario.\n\n" +
+
+    "HOW TO READ THE SUBMISSION\n" +
+    "The submission is provided in three labeled parts: SCENARIO, PROMPT, and OUTPUT (the generated email). " +
+    "Judge each criterion from the correct part:\n" +
+    "- Criteria A and B are judged ONLY from the learner's PROMPT.\n" +
+    "- Criterion C is judged from the OUTPUT, verified against the constraints stated in the PROMPT.\n" +
+    "Do NOT infer technique use from how polished the email looks. The generator adds structure (subject " +
+    "lines, bullets, sign-offs) on its own, so a good-looking email does not prove the PROMPT applied a " +
+    "technique. Score techniques ONLY from what is explicitly present in the PROMPT.\n\n" +
+
+    "The PROMPT must use ≥2 of 3 Craft techniques:\n" +
+    "- Role Assignment: assigns a specific role/persona with a defined voice, expertise, or style (not " +
+    'merely "write an email").\n' +
+    "- Context & Constraints: supplies concrete situational detail (named recipient, relationship, " +
+    "specific facts) and/or explicit tone or scope limits.\n" +
+    "- Format & Success Criteria: states ≥1 explicit, checkable output requirement (subject line, " +
+    "word/length limit, required sections or bullet count, specified sign-off).\n\n" +
+
     "CRITERIA\n\n" +
-    "A. Technique Application (50%)\n\n" +
-    "3 — ≥2 techniques skillfully used: role has specific voice/character; context has ≥3 named details; format has ≥1 measurable constraint.\n\n" +
-    "2 — 1 technique functional; others thin or missing; role generic; context vague; format unconstrained.\n\n" +
-    "1 — 0 techniques present; essentially a bare instruction.\n\n" +
-    "B. Prompt Quality (25%)\n\n" +
-    "3 — Every element purposeful; no filler; logically ordered role→context→format; specifics throughout.\n\n" +
-    "2 — Communicates intent but notable vagueness; filler phrases present; another reader might produce a different output.\n\n" +
-    "1 — Single sentence or loose vague instructions; applies to any email in any context.\n\n" +
-    "C. Output Quality (25%)\n\n" +
-    "3 — Send-ready; tone calibrated to recipient; no unfilled placeholders; content specific not generic.\n\n" +
-    "2 — Core message present but generic sections, tone drift, or 1–2 unfilled placeholders.\n\n" +
-    "1 — Unusable; placeholder text throughout, entirely generic, or off-topic.\n\n" +
-    "SCORING\n\n" +
-    "Points: score 3→100pts, 2→75pts, 1→50pts per criterion (before weighting).\n\n" +
-    "Weighted total = (A_pts × 0.50) + (B_pts × 0.25) + (C_pts × 0.25).\n\n" +
-    "Grade: 85–100=A, 70–84=B, 55–69=C, <55=F.\n\n" +
+
+    "A. Technique Application (50%) — judged from the PROMPT only\n" +
+    "3 — ≥2 techniques applied skillfully: role has a specific voice/character; context has ≥3 " +
+    "named/specific details; format has ≥1 measurable constraint.\n" +
+    "2 — Techniques present but below the level-3 bar: 1 technique applied well with others thin or " +
+    "missing, OR 2 techniques present but generic/thin.\n" +
+    "1 — No technique meaningfully applied; essentially a bare instruction.\n\n" +
+
+    "B. Prompt Quality (25%) — judged from the PROMPT only\n" +
+    "3 — Every element purposeful; no filler; logically ordered role → context → format; specifics " +
+    "throughout.\n" +
+    "2 — Communicates intent but has notable vagueness or filler; another reader might produce a " +
+    "different email from it.\n" +
+    "1 — Single sentence or loose, vague instruction that could apply to almost any email.\n\n" +
+
+    "C. Output Quality (25%) — judged from the OUTPUT, verified against the PROMPT's stated constraints\n" +
+    "First run two objective checks on the OUTPUT:\n" +
+    "  (1) PLACEHOLDER CHECK: Scan for unfilled bracketed placeholders (e.g., [Client Name], [Date], " +
+    "[Company], [Title], [Project]). EXCEPTION: ignore a single NAME placeholder on the signature/sign-off " +
+    "line (e.g., [Your Name], [Name]) — it is auto-appended by the generator and outside the learner's " +
+    "control; do not penalize or flag it. Penalize any OTHER unfilled placeholder in the body.\n" +
+    "  (2) CONSTRAINT CHECK: For each explicit, checkable constraint the PROMPT stated (word/length " +
+    "limit, required subject line, required sections/bullets, required sign-off), verify whether the " +
+    "OUTPUT satisfies it. Material non-compliance (stated word limit clearly exceeded, required subject " +
+    "line absent, etc.) caps Output Quality below level 3.\n" +
+    "3 — Send-ready; tone calibrated to recipient; no unfilled body placeholders; stated constraints " +
+    "satisfied; content specific, not generic.\n" +
+    "2 — Core message present but generic sections, tone drift, 1–2 unfilled body placeholders, OR a " +
+    "stated constraint not met.\n" +
+    "1 — Unusable; unfilled placeholders throughout the body, entirely generic, or off-topic.\n\n" +
+
+    "SCORING\n" +
+    "Points: score 3 → 100 pts, 2 → 75 pts, 1 → 50 pts per criterion (before weighting).\n" +
+    "Weighted total = (A_pts × 0.50) + (B_pts × 0.25) + (C_pts × 0.25).\n" +
+    "Grade: 85–100 = A, 70–84 = B, 55–69 = C, below 55 = F.\n\n" +
+
+    "FLAGS & CONFIDENCE\n" +
+    'Record objective findings in flags, e.g., "body_placeholder", "missing_subject_line", ' +
+    '"word_limit_exceeded", "prompt_output_indistinct". Set confidence to LOW if PROMPT and OUTPUT ' +
+    "cannot be cleanly separated or the submission is malformed; MEDIUM if a criterion sits on the " +
+    "border between two levels; otherwise HIGH.\n\n" +
+
+    "Output format: Return only the JSON object with these fields — scores (a, b, c each 1–3), " +
+    "weighted_total, letter_grade (A/B/C/F), feedback (2–3 sentences: one strength, one improvement), " +
+    "confidence (HIGH/MEDIUM/LOW), and flags (array of strings, or empty).\n\n" +
     "Return ONLY this JSON:\n\n" +
     "{\n" +
     '  "scores": {"a": <1-3>, "b": <1-3>, "c": <1-3>},\n' +

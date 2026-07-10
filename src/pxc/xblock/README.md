@@ -229,7 +229,7 @@ value, context, permission)` call with `context=null` delivers to *every*
 viewer at that permission level, not just the caller. For per-student data
 (the learner's own prompt/answer/grade/etc.), always pass
 `{ userId: context.userId }` instead of `null` — see
-`samples/email-prompt-craft/sandbox.js` or `samples/essay/sandbox.js` for
+`samples/m1l8-email-prompt-craft/sandbox.js` or `samples/essay/sandbox.js` for
 the pattern. Reserve `null` for genuinely shared/course-scoped data (e.g.
 `credentials.status`, since the underlying field itself is course-scoped).
 Getting this wrong doesn't error — it silently leaks one learner's activity
