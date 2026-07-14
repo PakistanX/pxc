@@ -189,7 +189,9 @@ export function setup(activity) {
     }
 
     const attemptCount = state.attempt_count || 0;
-    const canSubmit = attemptCount >= MIN_ATTEMPTS_BEFORE_SUBMIT && !!state.output_text && !!state.refinement_note;
+    const meetsAttemptThreshold = attemptCount >= MIN_ATTEMPTS_BEFORE_SUBMIT;
+    const canSubmit = meetsAttemptThreshold && !!state.output_text && !!state.refinement_note;
+    const canSaveRefinementNow = meetsAttemptThreshold && !!(state.refinement_note || "").trim();
 
     element.innerHTML = `
       ${STYLE}
@@ -226,8 +228,11 @@ export function setup(activity) {
             <label for="m2l3-refinement">Refinement note — what did you change and why?</label>
             <textarea class="small" id="m2l3-refinement" placeholder="Initial output did not include decision owners. Added explicit instruction to name an owner per decision.">${escapeHtml(state.refinement_note || "")}</textarea>
           </div>
-          <a href="#" class="m2l3-btn m2l3-btn-secondary" id="m2l3-save-refinement">Save refinement note</a>
+          <a href="#" class="m2l3-btn ${canSaveRefinementNow ? "" : "m2l3-btn-secondary"}" id="m2l3-save-refinement" ${canSaveRefinementNow ? "" : "disabled"}>Save refinement note</a>
           <div class="m2l3-status" id="m2l3-refinement-status"></div>
+          ${!meetsAttemptThreshold
+            ? `<p class="m2l3-hint">Generate at least ${MIN_ATTEMPTS_BEFORE_SUBMIT} times (refine your prompt and regenerate) before saving a refinement note.</p>`
+            : ""}
         </div>
 
         <a href="#" class="m2l3-btn ${canSubmit ? "" : "m2l3-btn-secondary"}" id="m2l3-submit" ${canSubmit ? "" : "disabled"}>
@@ -270,10 +275,30 @@ export function setup(activity) {
       }
     });
 
-    element.querySelector("#m2l3-save-refinement").addEventListener("click", async (e) => {
+    const refinementTextarea = element.querySelector("#m2l3-refinement");
+    const saveRefinementBtn = element.querySelector("#m2l3-save-refinement");
+
+    function updateSaveRefinementButton() {
+      const enabled = meetsAttemptThreshold && !!refinementTextarea.value.trim();
+      saveRefinementBtn.classList.toggle("m2l3-btn-secondary", !enabled);
+      if (enabled) {
+        saveRefinementBtn.removeAttribute("disabled");
+      } else {
+        saveRefinementBtn.setAttribute("disabled", "disabled");
+      }
+    }
+
+    refinementTextarea.addEventListener("input", updateSaveRefinementButton);
+
+    saveRefinementBtn.addEventListener("click", async (e) => {
       e.preventDefault();
-      const noteVal = element.querySelector("#m2l3-refinement").value.trim();
+      const noteVal = refinementTextarea.value.trim();
       const statusEl = element.querySelector("#m2l3-refinement-status");
+      if (!meetsAttemptThreshold) {
+        statusEl.textContent = "Generate at least " + MIN_ATTEMPTS_BEFORE_SUBMIT + " times first.";
+        statusEl.className = "m2l3-status error";
+        return;
+      }
       if (!noteVal) {
         statusEl.textContent = "Write a note first.";
         statusEl.className = "m2l3-status error";
@@ -281,8 +306,6 @@ export function setup(activity) {
       }
       try {
         await activity.sendAction("meeting.save_refinement", noteVal);
-        statusEl.textContent = "Saved.";
-        statusEl.className = "m2l3-status success";
       } catch (err) {
         statusEl.textContent = "Save failed: " + err;
         statusEl.className = "m2l3-status error";
@@ -321,6 +344,15 @@ export function setup(activity) {
       const statusEl = element.querySelector("#m2l3-gen-status");
       if (statusEl) {
         statusEl.textContent = "Generated. Review it, refine your prompt, and regenerate before submitting.";
+        statusEl.className = "m2l3-status success";
+      }
+      return;
+    } else if (name === "refinement.saved") {
+      activity.state.refinement_note = value.refinement_note;
+      render();
+      const statusEl = element.querySelector("#m2l3-refinement-status");
+      if (statusEl) {
+        statusEl.textContent = "Saved.";
         statusEl.className = "m2l3-status success";
       }
       return;

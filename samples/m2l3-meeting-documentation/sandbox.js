@@ -249,6 +249,7 @@ export function onAction(name, data, context, permission) {
   if (name === "meeting.save_refinement") {
     const note = (value || "").trim();
     setField("refinement_note", JSON.stringify(note));
+    sendEvent("refinement.saved", JSON.stringify({ refinement_note: note }), { userId: userId }, "play");
     return "";
   }
 

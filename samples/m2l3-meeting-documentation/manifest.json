@@ -109,6 +109,12 @@
         "attempt_count": { "type": "integer" }
       }
     },
+    "refinement.saved": {
+      "type": "object",
+      "properties": {
+        "refinement_note": { "type": "string" }
+      }
+    },
     "meeting.graded": {
       "type": "object",
       "properties": {
