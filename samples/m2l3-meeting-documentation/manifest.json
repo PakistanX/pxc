@@ -1,0 +1,134 @@
+{
+  "name": "m2l3-meeting-documentation",
+  "ui": "ui.js",
+  "sandbox": "sandbox.wasm",
+  "capabilities": {
+    "http": {
+      "allowed_hosts": ["api.anthropic.com"]
+    },
+    "grading": {}
+  },
+  "fields": {
+    "haiku_api_key": {
+      "type": "string",
+      "scope": "course",
+      "default": ""
+    },
+    "transcript_text": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "prompt_text": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "output_text": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "refinement_note": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "attempt_count": {
+      "type": "integer",
+      "scope": "user,activity",
+      "default": 0
+    },
+    "submitted": {
+      "type": "boolean",
+      "scope": "user,activity",
+      "default": false
+    },
+    "grade_result": {
+      "type": "object",
+      "scope": "user,activity",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_transcript_or_notes": { "type": "string" },
+            "c2_prompt_template_design": { "type": "string" },
+            "c3_five_section_output": { "type": "string" },
+            "c4_action_item_completeness": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "default": null
+    },
+    "attempts": {
+      "type": "log",
+      "scope": "user,activity",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": { "type": "string" },
+          "output": { "type": "string" }
+        }
+      }
+    }
+  },
+  "actions": {
+    "credentials.save": {
+      "type": "object",
+      "properties": {
+        "haiku_api_key": { "type": "string" }
+      }
+    },
+    "meeting.generate": {
+      "type": "object",
+      "properties": {
+        "transcript": { "type": "string" },
+        "prompt": { "type": "string" }
+      }
+    },
+    "meeting.save_refinement": { "type": "string" },
+    "meeting.submit": { "type": "object", "properties": {} }
+  },
+  "events": {
+    "credentials.status": {
+      "type": "object",
+      "properties": { "configured": { "type": "boolean" } }
+    },
+    "meeting.generated": {
+      "type": "object",
+      "properties": {
+        "transcript": { "type": "string" },
+        "prompt": { "type": "string" },
+        "output": { "type": "string" },
+        "attempt_count": { "type": "integer" }
+      }
+    },
+    "meeting.graded": {
+      "type": "object",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_transcript_or_notes": { "type": "string" },
+            "c2_prompt_template_design": { "type": "string" },
+            "c3_five_section_output": { "type": "string" },
+            "c4_action_item_completeness": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "generation.error": { "type": "string" }
+  }
+}

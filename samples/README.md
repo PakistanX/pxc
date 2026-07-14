@@ -11,12 +11,15 @@ For the full specification of the activity format, see the [Activity API Referen
 | [chat](./chat/) | Real-time collaborative chat with log-backed message history | Yes |
 | [chess](./chess/) | Turn-based chess game with player management and game records | Yes |
 | [collab-editor](./collab-editor/) | Collaborative text editor with Yjs synchronization and markdown rendering | Yes |
-| [m1l8-email-prompt-craft](./m1l8-email-prompt-craft/) | M1L8 prompt-engineering exercise: write/iterate a prompt, generate a professional email via Claude Haiku, auto-graded against a rubric (uses HTTP and grading capabilities) | Yes |
 | [flappy-bird](./flappy-bird/) | Flappy bird game with personal best scores and course-wide leaderboard | Yes |
 | [flashcards](./flashcards/) | Spaced-repetition flip cards with author-selectable SM-2 or binary rating | Yes |
 | [helloworld](./helloworld/) | Minimal "Hello World" activity demonstrating basic PXC setup | No |
 | [image](./image/) | Image upload and storage activity using file storage capability | Yes |
 | [interactive-video](./interactive-video/) | YouTube video with embedded MCQ interactions at configured timestamps | Yes |
+| [m1l8-email-prompt-craft](./m1l8-email-prompt-craft/) | M1L8 prompt-engineering exercise: write/iterate a prompt, generate a professional email via Claude Haiku, auto-graded against a rubric (uses HTTP and grading capabilities) | Yes |
+| [m2l3-meeting-documentation](./m2l3-meeting-documentation/) | M2L3 meeting documentation exercise: build a prompt template, generate/refine a 5-section summary via Claude Haiku, auto-graded against a binary rubric | Yes |
+| [m2l5-presentation-builder](./m2l5-presentation-builder/) | M2L5 presentation-builder exercise: staged prompts + a transcribed 5-slide deck, auto-graded against a binary rubric via Claude Haiku (no in-app generation) | Yes |
+| [m2l6-visual-story](./m2l6-visual-story/) | M2L6 visual-story exercise: 3 image-generation prompts + captions forming a narrative, auto-graded (text-only, no images) against a binary rubric via Claude Haiku | Yes |
 | [markdown](./markdown/) | Markdown content block with live editing and HTML rendering | Yes |
 | [math](./math/) | Math problem with answer validation and per-user score tracking | Yes |
 | [mcq](./mcq/) | Multiple choice question with configurable answers and grading | Yes |

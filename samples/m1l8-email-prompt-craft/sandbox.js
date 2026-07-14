@@ -100,13 +100,12 @@ function gradingRubricPrompt(submission) {
     "border between two levels; otherwise HIGH.\n\n" +
 
     "Output format: Return only the JSON object with these fields — scores (a, b, c each 1–3), " +
-    "weighted_total, letter_grade (A/B/C/F), feedback (2–3 sentences: one strength, one improvement), " +
-    "confidence (HIGH/MEDIUM/LOW), and flags (array of strings, or empty).\n\n" +
+    "feedback (2–3 sentences: one strength, one improvement), confidence (HIGH/MEDIUM/LOW), and " +
+    "flags (array of strings, or empty). Do not compute or include a weighted total or letter grade " +
+    "— that's derived from your scores separately.\n\n" +
     "Return ONLY this JSON:\n\n" +
     "{\n" +
     '  "scores": {"a": <1-3>, "b": <1-3>, "c": <1-3>},\n' +
-    '  "weighted_total": <number>,\n' +
-    '  "letter_grade": "<A/B/C/F>",\n' +
     '  "feedback": "<2-3 sentences: one strength, one improvement>",\n' +
     '  "confidence": "<HIGH/MEDIUM/LOW>",\n' +
     '  "flags": [<strings or empty array>]\n' +
@@ -162,6 +161,30 @@ function stripJsonFences(text) {
   const trimmed = text.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   return fenced ? fenced[1] : trimmed;
+}
+
+// The LLM grader is asked for both per-criterion scores AND a weighted
+// total/letter grade computed from them — but it's a language model, not a
+// calculator, and can (and does) get that arithmetic slightly wrong (e.g.
+// reporting 98% for a straight 3/3/3, which no valid combination of the
+// rubric's discrete point values can actually produce). Recompute both
+// deterministically from the raw scores instead of trusting the model's
+// own sum, so the displayed percentage is always mathematically exact.
+const SCORE_POINTS = { 1: 50, 2: 75, 3: 100 };
+
+function recomputeGrade(grade) {
+  const a = SCORE_POINTS[grade.scores.a] || 50;
+  const b = SCORE_POINTS[grade.scores.b] || 50;
+  const c = SCORE_POINTS[grade.scores.c] || 50;
+  const weighted = a * 0.5 + b * 0.25 + c * 0.25;
+  let letter;
+  if (weighted >= 85) letter = "A";
+  else if (weighted >= 70) letter = "B";
+  else if (weighted >= 55) letter = "C";
+  else letter = "F";
+  grade.weighted_total = weighted;
+  grade.letter_grade = letter;
+  return grade;
 }
 
 // Per-user events must target the calling user ({ userId }), not broadcast
@@ -293,11 +316,13 @@ export function onAction(name, data, context, permission) {
     if (
       !grade ||
       !grade.scores ||
-      typeof grade.weighted_total !== "number" ||
-      typeof grade.letter_grade !== "string"
+      ![1, 2, 3].includes(grade.scores.a) ||
+      ![1, 2, 3].includes(grade.scores.b) ||
+      ![1, 2, 3].includes(grade.scores.c)
     ) {
       return fail("Grading response was missing required fields.", userId);
     }
+    grade = recomputeGrade(grade);
 
     setField("grade_result", JSON.stringify(grade));
     setField("submitted", JSON.stringify(true));

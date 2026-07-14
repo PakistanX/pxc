@@ -22,10 +22,17 @@ setup(
         "the runtime it delegates to."
     ),
     license="Apache-2.0",
-    packages=["pxc.xblock", "pxc.xblock.migrations"],
+    packages=[
+        "pxc.xblock",
+        "pxc.xblock.migrations",
+        "pxc.xblock.management",
+        "pxc.xblock.management.commands",
+    ],
     package_dir={
         "pxc.xblock": ".",
         "pxc.xblock.migrations": "migrations",
+        "pxc.xblock.management": "management",
+        "pxc.xblock.management.commands": "management/commands",
     },
     package_data={
         "pxc.xblock": [

@@ -1,0 +1,169 @@
+{
+  "name": "m2l5-presentation-builder",
+  "ui": "ui.js",
+  "sandbox": "sandbox.wasm",
+  "capabilities": {
+    "http": {
+      "allowed_hosts": ["api.anthropic.com"]
+    },
+    "grading": {}
+  },
+  "fields": {
+    "haiku_api_key": {
+      "type": "string",
+      "scope": "course",
+      "default": ""
+    },
+    "topic": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "prompt_stages": {
+      "type": "array",
+      "scope": "user,activity",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "scope": "user,activity",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "bullets": { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "submitted": {
+      "type": "boolean",
+      "scope": "user,activity",
+      "default": false
+    },
+    "grade_result": {
+      "type": "object",
+      "scope": "user,activity",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_slide_count": { "type": "string" },
+            "c2_narrative_structure": { "type": "string" },
+            "c3_technique_usage": { "type": "string" },
+            "c4_prompt_stages": { "type": "string" },
+            "c5_slide_text_quality": { "type": "string" },
+            "c6_topic_validity": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "default": null
+    }
+  },
+  "actions": {
+    "credentials.save": {
+      "type": "object",
+      "properties": {
+        "haiku_api_key": { "type": "string" }
+      }
+    },
+    "deck.save": {
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string" },
+        "prompt_stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "slides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "bullets": { "type": "array", "items": { "type": "string" } },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "deck.submit": { "type": "object", "properties": {} }
+  },
+  "events": {
+    "credentials.status": {
+      "type": "object",
+      "properties": { "configured": { "type": "boolean" } }
+    },
+    "deck.saved": {
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string" },
+        "prompt_stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "slides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "bullets": { "type": "array", "items": { "type": "string" } },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "deck.graded": {
+      "type": "object",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_slide_count": { "type": "string" },
+            "c2_narrative_structure": { "type": "string" },
+            "c3_technique_usage": { "type": "string" },
+            "c4_prompt_stages": { "type": "string" },
+            "c5_slide_text_quality": { "type": "string" },
+            "c6_topic_validity": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "generation.error": { "type": "string" }
+  }
+}

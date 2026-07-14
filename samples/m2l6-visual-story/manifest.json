@@ -1,0 +1,134 @@
+{
+  "name": "m2l6-visual-story",
+  "ui": "ui.js",
+  "sandbox": "sandbox.wasm",
+  "capabilities": {
+    "http": {
+      "allowed_hosts": ["api.anthropic.com"]
+    },
+    "grading": {}
+  },
+  "fields": {
+    "haiku_api_key": {
+      "type": "string",
+      "scope": "course",
+      "default": ""
+    },
+    "topic": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "images": {
+      "type": "array",
+      "scope": "user,activity",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": { "type": "string" },
+          "caption": { "type": "string" }
+        }
+      }
+    },
+    "submitted": {
+      "type": "boolean",
+      "scope": "user,activity",
+      "default": false
+    },
+    "grade_result": {
+      "type": "object",
+      "scope": "user,activity",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_image_count": { "type": "string" },
+            "c2_prompt_elements": { "type": "string" },
+            "c3_style_anchor": { "type": "string" },
+            "c4_caption_narrative": { "type": "string" },
+            "c5_topic_match": { "type": "string" },
+            "c6_submission_format": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "default": null
+    }
+  },
+  "actions": {
+    "credentials.save": {
+      "type": "object",
+      "properties": {
+        "haiku_api_key": { "type": "string" }
+      }
+    },
+    "story.save": {
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string" },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": { "type": "string" },
+              "caption": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "story.submit": { "type": "object", "properties": {} }
+  },
+  "events": {
+    "credentials.status": {
+      "type": "object",
+      "properties": { "configured": { "type": "boolean" } }
+    },
+    "story.saved": {
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string" },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": { "type": "string" },
+              "caption": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "story.graded": {
+      "type": "object",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_image_count": { "type": "string" },
+            "c2_prompt_elements": { "type": "string" },
+            "c3_style_anchor": { "type": "string" },
+            "c4_caption_narrative": { "type": "string" },
+            "c5_topic_match": { "type": "string" },
+            "c6_submission_format": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "generation.error": { "type": "string" }
+  }
+}
