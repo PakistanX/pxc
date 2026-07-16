@@ -67,13 +67,23 @@ function gradingRubricPrompt(submission) {
     'on (e.g., "a meeting happened"), or contains fewer than 3 of the required elements.\n\n' +
 
     "C2. Prompt Template Design\n" +
-    "Y — A prompt template is present and uses all three of the following CAR craft techniques: " +
-    "(1) Role Assignment — a named persona for the AI; (2) Context & Constraints — at least one " +
-    "explicit constraint on output scope or tone; (3) Format & Success Criteria — explicit output " +
-    "structure requiring all 5 sections. Task Decomposition (T6) must also be present, evidenced by " +
-    "the prompt breaking the output into distinct numbered or labeled sections.\n" +
-    "N — Prompt template is absent, or any one of the four required techniques (Role, " +
-    "Context/Constraints, Format, Task Decomposition) is missing or not meaningfully applied.\n\n" +
+    "Before scoring this criterion, evaluate each of the four required techniques individually. " +
+    'For each one, quote the exact phrase from the prompt template that satisfies it, or write "none ' +
+    'found." Base the Y/N verdict only on whether a satisfying phrase exists — a technique counts as ' +
+    "present even if it is briefly or plainly worded.\n\n" +
+    "The four required techniques:\n" +
+    '(1) Role Assignment — a named persona for the AI (e.g., "You are an executive assistant").\n' +
+    "(2) Context & Constraints — at least ONE explicit constraint on output scope, tone, or length. " +
+    "Any one of the following counts as satisfying this: a tone instruction (e.g., \"professional " +
+    "tone,\" \"neutral tone\"), a length limit (e.g., \"under 300 words,\" \"keep it brief\"), or a " +
+    "scope rule (e.g., \"use only the transcript,\" \"don't add anything not stated,\" \"focus on " +
+    "decisions\"). Do NOT require the constraint to be strongly or elaborately worded — a single " +
+    "plainly-stated scope, tone, or length constraint is sufficient.\n" +
+    "(3) Format & Success Criteria — explicit output structure requiring all 5 sections.\n" +
+    "(4) Task Decomposition (T6) — the prompt breaks the output into distinct numbered or labeled " +
+    "sections.\n\n" +
+    "Y — All four techniques are present (a satisfying phrase was found for each).\n" +
+    "N — Any one of the four techniques is absent (no satisfying phrase found for it).\n\n" +
 
     "C3. Five-Section Summary Output\n" +
     "Y — The AI-generated output contains all five labeled sections: (1) Meeting Overview, " +
