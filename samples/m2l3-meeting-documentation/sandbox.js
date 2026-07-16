@@ -22,6 +22,32 @@ const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 const ANTHROPIC_VERSION = "2023-06-01";
 const MIN_ATTEMPTS_BEFORE_SUBMIT = 2;
 
+// Faithfully executes the learner's own prompt template instead of imposing
+// house formatting — grading (C2 etc.) evaluates the learner's prompt, and
+// that only means something if the output isn't auto-structured/auto-
+// corrected regardless of what the learner actually wrote.
+const GENERATION_SYSTEM_PROMPT =
+  "You are an AI writing assistant inside a prompt-engineering exercise. A learner has written a " +
+  "prompt template, and your job is to execute THAT template faithfully to produce a meeting " +
+  "summary. The learner is being graded on how well their template is written, so your output must " +
+  "reflect their instructions exactly. Do not add sections, headings, tables, or formatting the " +
+  "learner did not ask for, and do not silently correct or improve a weak template.\n\n" +
+  "Rules:\n" +
+  "1. Follow the learner's prompt template exactly as written. If it specifies sections, labels, " +
+  "tables, or formats, reproduce them precisely. If it omits something, leave it omitted — do not " +
+  "supply it yourself.\n" +
+  "2. Use ONLY information present in the transcript. Do not invent participants, decisions, owners, " +
+  "deadlines, priorities, or any other detail. If the template asks for a field the transcript does " +
+  'not contain, follow the learner\'s instruction for handling missing values; if they gave none, ' +
+  'write "Not specified".\n' +
+  "3. Be consistent. Given the same template and transcript, produce the same summary. Do not vary " +
+  "structure or wording between runs.\n" +
+  "4. Output only the summary — no preamble, commentary, or explanation.";
+
+function generationUserMessage(prompt, transcript) {
+  return "Learner's prompt template:\n" + prompt + "\n\nMeeting transcript:\n" + transcript;
+}
+
 const GRADING_SYSTEM_PROMPT =
   "Grade student prompt engineering submissions against a binary checklist. Each criterion is " +
   "Y (pass) or N (fail). Output valid JSON only — no preamble, no markdown fences.";
@@ -98,6 +124,11 @@ function callAnthropic(apiKey, systemPrompt, userMessage, maxTokens) {
   const body = JSON.stringify({
     model: ANTHROPIC_MODEL,
     max_tokens: maxTokens,
+    // temperature 0: both generation and grading need to be deterministic —
+    // the same learner prompt/transcript (or the same submission at grading
+    // time) must produce the same output/verdicts every run, otherwise the
+    // rubric is scoring sampling noise instead of the actual submission.
+    temperature: 0,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
   });
@@ -216,16 +247,9 @@ export function onAction(name, data, context, permission) {
       return fail("This activity's AI key isn't configured yet — ask course staff.", userId);
     }
 
-    const systemPrompt =
-      "You are an assistant that follows the user's instructions exactly to produce the requested " +
-      "output. Output only the requested content — no commentary, no markdown fences, no meta-" +
-      "explanation of what you did.";
-    const userMessage =
-      prompt + "\n\n---\nMEETING TRANSCRIPT / NOTES:\n" + transcript;
-
     let output;
     try {
-      output = callAnthropic(apiKey, systemPrompt, userMessage, 900);
+      output = callAnthropic(apiKey, GENERATION_SYSTEM_PROMPT, generationUserMessage(prompt, transcript), 900);
     } catch (e) {
       return fail(e.message, userId);
     }

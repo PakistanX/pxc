@@ -124,6 +124,10 @@ function callAnthropic(apiKey, systemPrompt, userMessage, maxTokens) {
   const body = JSON.stringify({
     model: ANTHROPIC_MODEL,
     max_tokens: maxTokens,
+    // temperature 0: grading must be deterministic — the same submission
+    // scoring differently between runs means the rubric is judging sampling
+    // noise instead of the actual submission.
+    temperature: 0,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
   });
