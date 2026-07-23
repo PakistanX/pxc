@@ -20,6 +20,7 @@ For the full specification of the activity format, see the [Activity API Referen
 | [m2l3-meeting-documentation](./m2l3-meeting-documentation/) | M2L3 meeting documentation exercise: build a prompt template, generate/refine a 5-section summary via Claude Haiku, auto-graded against a binary rubric | Yes |
 | [m2l5-presentation-builder](./m2l5-presentation-builder/) | M2L5 presentation-builder exercise: staged prompts + a transcribed 5-slide deck, auto-graded against a binary rubric via Claude Haiku (no in-app generation) | Yes |
 | [m2l6-visual-story](./m2l6-visual-story/) | M2L6 visual-story exercise: 3 image-generation prompts + captions forming a narrative, auto-graded (text-only, no images) against a binary rubric via Claude Haiku | Yes |
+| [m3l2-data-analysis-toolkit](./m3l2-data-analysis-toolkit/) | M3L2 data-analysis exercise: dataset choice, AI-generated description, 2 visualization write-ups, executive summary, and 3 staged prompts, auto-graded against a binary rubric via Claude Haiku (no in-app analysis) | Yes |
 | [markdown](./markdown/) | Markdown content block with live editing and HTML rendering | Yes |
 | [math](./math/) | Math problem with answer validation and per-user score tracking | Yes |
 | [mcq](./mcq/) | Multiple choice question with configurable answers and grading | Yes |

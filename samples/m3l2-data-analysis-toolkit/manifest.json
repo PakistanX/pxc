@@ -1,0 +1,168 @@
+{
+  "name": "m3l2-data-analysis-toolkit",
+  "ui": "ui.js",
+  "sandbox": "sandbox.wasm",
+  "capabilities": {
+    "http": {
+      "allowed_hosts": ["api.anthropic.com"]
+    },
+    "grading": {}
+  },
+  "assets": ["Public_M3L2_Datasets.xlsx"],
+  "fields": {
+    "haiku_api_key": {
+      "type": "string",
+      "scope": "course",
+      "default": ""
+    },
+    "dataset": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "ai_description": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "visualizations": {
+      "type": "array",
+      "scope": "user,activity",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "caption": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "executive_summary": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "stage2_prompt": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "stage3_prompt": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "stage4_prompt": {
+      "type": "string",
+      "scope": "user,activity",
+      "default": ""
+    },
+    "submitted": {
+      "type": "boolean",
+      "scope": "user,activity",
+      "default": false
+    },
+    "grade_result": {
+      "type": "object",
+      "scope": "user,activity",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_dataset_description": { "type": "string" },
+            "c2_visualization_count": { "type": "string" },
+            "c3_executive_summary": { "type": "string" },
+            "c4_prompt_documentation": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "default": null
+    }
+  },
+  "actions": {
+    "credentials.save": {
+      "type": "object",
+      "properties": {
+        "haiku_api_key": { "type": "string" }
+      }
+    },
+    "draft.save": {
+      "type": "object",
+      "properties": {
+        "dataset": { "type": "string" },
+        "ai_description": { "type": "string" },
+        "visualizations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "caption": { "type": "string" }
+            }
+          }
+        },
+        "executive_summary": { "type": "string" },
+        "stage2_prompt": { "type": "string" },
+        "stage3_prompt": { "type": "string" },
+        "stage4_prompt": { "type": "string" }
+      }
+    },
+    "toolkit.submit": { "type": "object", "properties": {} }
+  },
+  "events": {
+    "credentials.status": {
+      "type": "object",
+      "properties": { "configured": { "type": "boolean" } }
+    },
+    "draft.saved": {
+      "type": "object",
+      "properties": {
+        "dataset": { "type": "string" },
+        "ai_description": { "type": "string" },
+        "visualizations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "caption": { "type": "string" }
+            }
+          }
+        },
+        "executive_summary": { "type": "string" },
+        "stage2_prompt": { "type": "string" },
+        "stage3_prompt": { "type": "string" },
+        "stage4_prompt": { "type": "string" }
+      }
+    },
+    "toolkit.graded": {
+      "type": "object",
+      "properties": {
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "c1_dataset_description": { "type": "string" },
+            "c2_visualization_count": { "type": "string" },
+            "c3_executive_summary": { "type": "string" },
+            "c4_prompt_documentation": { "type": "string" }
+          }
+        },
+        "y_count": { "type": "integer" },
+        "weighted_total": { "type": "number" },
+        "letter_grade": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "feedback": { "type": "string" },
+        "confidence": { "type": "string" },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "generation.error": { "type": "string" }
+  }
+}
