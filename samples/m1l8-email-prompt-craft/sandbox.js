@@ -175,6 +175,8 @@ function stripJsonFences(text) {
 // deterministically from the raw scores instead of trusting the model's
 // own sum, so the displayed percentage is always mathematically exact.
 const SCORE_POINTS = { 1: 50, 2: 75, 3: 100 };
+// C or above (>=55%) is the passing threshold — see PASSING_WEIGHTED_TOTAL below.
+const PASSING_WEIGHTED_TOTAL = 55;
 
 function recomputeGrade(grade) {
   const a = SCORE_POINTS[grade.scores.a] || 50;
@@ -188,6 +190,7 @@ function recomputeGrade(grade) {
   else letter = "F";
   grade.weighted_total = weighted;
   grade.letter_grade = letter;
+  grade.passed = weighted >= PASSING_WEIGHTED_TOTAL;
   return grade;
 }
 
@@ -329,10 +332,16 @@ export function onAction(name, data, context, permission) {
     grade = recomputeGrade(grade);
 
     setField("grade_result", JSON.stringify(grade));
-    setField("submitted", JSON.stringify(true));
 
-    reportScored(Math.max(0, Math.min(1, grade.weighted_total / 100)));
-    reportCompleted();
+    // Only a passing grade locks the activity and reaches the LMS gradebook/
+    // completion tracker. A failing attempt leaves submitted=false so the
+    // student can revise their prompt and resubmit on their own — no grade
+    // or completion should ever be recorded for a failing attempt.
+    if (grade.passed) {
+      setField("submitted", JSON.stringify(true));
+      reportScored(Math.max(0, Math.min(1, grade.weighted_total / 100)));
+      reportCompleted();
+    }
 
     sendEvent("email.graded", JSON.stringify(grade), { userId: userId }, "play");
     return "";

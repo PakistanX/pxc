@@ -198,6 +198,13 @@ export function setup(activity) {
         <h3>Professional Email — Prompt Craft</h3>
         <p class="epc-hint">Pick a scenario, write a prompt using at least 2 of the 3 Craft techniques (Role Assignment, Context &amp; Constraints, Format &amp; Success Criteria), generate the email, then iterate at least once before submitting.</p>
 
+        ${state.grade_result && typeof state.grade_result.weighted_total === "number" && !state.grade_result.passed
+          ? `<div class="epc-section">
+               <p class="epc-status error"><strong>Your last submission did not meet the passing threshold.</strong> Review the feedback below, revise your prompt, and submit again.</p>
+               ${renderGradeCard(state.grade_result)}
+             </div>`
+          : ""}
+
         <div class="epc-section">
           <div class="epc-field">
             <label for="epc-scenario">Scenario</label>
@@ -313,7 +320,7 @@ export function setup(activity) {
       return;
     } else if (name === "email.graded") {
       activity.state.grade_result = value;
-      activity.state.submitted = true;
+      activity.state.submitted = !!value.passed;
       render();
       return;
     } else if (name === "generation.error") {

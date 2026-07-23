@@ -54,6 +54,7 @@
         "y_count": { "type": "integer" },
         "weighted_total": { "type": "number" },
         "letter_grade": { "type": "string" },
+        "passed": { "type": "boolean" },
         "feedback": { "type": "string" },
         "confidence": { "type": "string" },
         "flags": { "type": "array", "items": { "type": "string" } }
@@ -124,6 +125,7 @@
         "y_count": { "type": "integer" },
         "weighted_total": { "type": "number" },
         "letter_grade": { "type": "string" },
+        "passed": { "type": "boolean" },
         "feedback": { "type": "string" },
         "confidence": { "type": "string" },
         "flags": { "type": "array", "items": { "type": "string" } }

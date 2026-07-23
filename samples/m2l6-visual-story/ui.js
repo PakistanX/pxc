@@ -244,6 +244,13 @@ export function setup(activity) {
         <h3>Visual Story Collection</h3>
         <p class="m2l6-hint">Pick an approved topic, write 3 image-generation prompts sharing a consistent style anchor phrase, and 3 captions that read as one sequential story (beginning, middle, end). No images are needed — only your prompts and captions are graded.</p>
 
+        ${state.grade_result && typeof state.grade_result.weighted_total === "number" && !state.grade_result.passed
+          ? `<div class="m2l6-section">
+               <p class="m2l6-status error"><strong>Your last submission did not meet the passing threshold.</strong> Review the feedback below, revise your prompts or captions, and submit again.</p>
+               ${renderGradeCard(state.grade_result)}
+             </div>`
+          : ""}
+
         <div class="m2l6-section">
           <div class="m2l6-field">
             <label for="m2l6-topic">Topic</label>
@@ -322,7 +329,7 @@ export function setup(activity) {
       return;
     } else if (name === "story.graded") {
       activity.state.grade_result = value;
-      activity.state.submitted = true;
+      activity.state.submitted = !!value.passed;
       render();
       return;
     } else if (name === "generation.error") {

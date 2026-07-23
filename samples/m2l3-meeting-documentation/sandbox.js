@@ -191,6 +191,9 @@ const CRITERIA_KEYS = [
   "c4_action_item_completeness",
 ];
 
+// 50% (2 of 4 criteria) is the passing threshold — see PASSING_Y_COUNT below.
+const PASSING_Y_COUNT = 2;
+
 function recomputeGrade(grade) {
   const yCount = CRITERIA_KEYS.filter((k) => grade.criteria[k] === "Y").length;
   let letter;
@@ -201,6 +204,7 @@ function recomputeGrade(grade) {
   grade.y_count = yCount;
   grade.weighted_total = (yCount / 4) * 100;
   grade.letter_grade = letter;
+  grade.passed = yCount >= PASSING_Y_COUNT;
   return grade;
 }
 
@@ -340,10 +344,16 @@ export function onAction(name, data, context, permission) {
     grade = recomputeGrade(grade);
 
     setField("grade_result", JSON.stringify(grade));
-    setField("submitted", JSON.stringify(true));
 
-    reportScored(Math.max(0, Math.min(1, grade.weighted_total / 100)));
-    reportCompleted();
+    // Only a passing grade locks the activity and reaches the LMS gradebook/
+    // completion tracker. A failing attempt leaves submitted=false so the
+    // learner can revise their prompt/refinement and resubmit on their own —
+    // no grade or completion should ever be recorded for a failing attempt.
+    if (grade.passed) {
+      setField("submitted", JSON.stringify(true));
+      reportScored(Math.max(0, Math.min(1, grade.weighted_total / 100)));
+      reportCompleted();
+    }
 
     sendEvent("meeting.graded", JSON.stringify(grade), { userId: userId }, "play");
     return "";

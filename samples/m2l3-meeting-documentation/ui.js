@@ -199,6 +199,13 @@ export function setup(activity) {
         <h3>Meeting Documentation System</h3>
         <p class="m2l3-hint">Paste a meeting transcript or detailed notes (10-20+ lines), write a prompt template using Role Assignment, Context &amp; Constraints, Format &amp; Success Criteria, and Task Decomposition, generate the summary, then refine your prompt and regenerate at least once before submitting.</p>
 
+        ${state.grade_result && typeof state.grade_result.weighted_total === "number" && !state.grade_result.passed
+          ? `<div class="m2l3-section">
+               <p class="m2l3-status error"><strong>Your last submission did not meet the passing threshold.</strong> Review the feedback below, revise your prompt template or refinement note, and submit again.</p>
+               ${renderGradeCard(state.grade_result)}
+             </div>`
+          : ""}
+
         <div class="m2l3-section">
           <div class="m2l3-field">
             <label for="m2l3-transcript">Meeting transcript / notes</label>
@@ -358,7 +365,7 @@ export function setup(activity) {
       return;
     } else if (name === "meeting.graded") {
       activity.state.grade_result = value;
-      activity.state.submitted = true;
+      activity.state.submitted = !!value.passed;
       render();
       return;
     } else if (name === "generation.error") {

@@ -337,6 +337,13 @@ export function setup(activity) {
         <h3>Presentation Builder</h3>
         <p class="m2l5-hint">Pick an approved topic, submit at least 3 labeled staged prompts (outline, content, speaker notes, visual suggestions), then transcribe your final 5-slide deck below. Build the deck with your own AI tool of choice using these prompts, then bring the results here.</p>
 
+        ${state.grade_result && typeof state.grade_result.weighted_total === "number" && !state.grade_result.passed
+          ? `<div class="m2l5-section">
+               <p class="m2l5-status error"><strong>Your last submission did not meet the passing threshold.</strong> Review the feedback below, revise your deck or prompts, and submit again.</p>
+               ${renderGradeCard(state.grade_result)}
+             </div>`
+          : ""}
+
         <div class="m2l5-section">
           <div class="m2l5-field">
             <label for="m2l5-topic">Topic</label>
@@ -432,7 +439,7 @@ export function setup(activity) {
       return;
     } else if (name === "deck.graded") {
       activity.state.grade_result = value;
-      activity.state.submitted = true;
+      activity.state.submitted = !!value.passed;
       render();
       return;
     } else if (name === "generation.error") {
